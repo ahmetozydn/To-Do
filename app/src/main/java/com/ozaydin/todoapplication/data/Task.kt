@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 import java.time.LocalDateTime
 
 @Entity
-data class ToDoModel(
+data class TaskModel(
     var title:String? = null,
     var description:String? = null,
     var date: LocalDateTime? = null,

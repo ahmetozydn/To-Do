@@ -1,6 +1,7 @@
 package com.ozaydin.todoapplication.viewmodel
 
 import android.content.Context
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -19,9 +20,11 @@ class MainActivityViewModel :ViewModel(){
     val description: LiveData<String> get() = _description
     private lateinit var db: ToDoDatabase
 
+    var toDo = mutableStateOf<List<ToDoModel>>(listOf())
 
 
-    suspend fun insertTask(title : String?, description : String?, date : LocalDateTime?, time : LocalDateTime?, context : Context) {
+
+     fun insertTask(title : String?, description : String?, date : LocalDateTime?, time : LocalDateTime?, context : Context) {
         val toDoDb = ToDoDatabase(context = context)
         val toDo = ToDoModel(title,description,null,null,false)
         viewModelScope.launch(Dispatchers.IO) {
@@ -29,7 +32,10 @@ class MainActivityViewModel :ViewModel(){
         }
     }
 
-    suspend fun deleteTask() = viewModelScope.launch(Dispatchers.IO) {  }
-    suspend fun readTasks() = viewModelScope.launch (Dispatchers.IO){  }
+     fun deleteTask() = viewModelScope.launch(Dispatchers.IO) {  }
+     fun readTasks(toDoModel: ToDoModel, context: Context) = viewModelScope.launch (Dispatchers.IO){
+        val toDoDb = ToDoDatabase(context = context)
+
+    }
 
 }
