@@ -1,4 +1,4 @@
 package com.ozaydin.todoapplication
 
-class ToDoApplication {
+class AppModule {
 }
