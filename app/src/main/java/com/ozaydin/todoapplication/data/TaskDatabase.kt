@@ -5,12 +5,12 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [ToDoModel::class], version = 1)
-abstract class ToDoDatabase : RoomDatabase(){
-    abstract fun toDoDao() : ToDoDao
-    companion object{
+@Database(entities = [Task::class], version = 1)
+abstract class TaskDatabase : RoomDatabase(){
+    abstract fun taskDao() : TaskDao
+   /* companion object{
         //Singleton
-        @Volatile private var instance : ToDoDatabase? = null
+        @Volatile private var instance : TaskDatabase? = null
         private val lock = Any()
         operator fun invoke(context : Context) = instance ?: synchronized(lock) {
             instance ?: makeDatabase(context).also {
@@ -18,7 +18,7 @@ abstract class ToDoDatabase : RoomDatabase(){
             }
         }
         private fun makeDatabase(context : Context) = Room.databaseBuilder(
-            context.applicationContext, ToDoDatabase::class.java,"to_do_database"
+            context.applicationContext, TaskDatabase::class.java,"task_database"
         ).build()
-    }
+    }*/
 }

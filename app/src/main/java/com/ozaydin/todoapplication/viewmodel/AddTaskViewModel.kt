@@ -1,25 +1,50 @@
 package com.ozaydin.todoapplication.viewmodel
 
 import android.content.Context
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ozaydin.todoapplication.data.ToDoDatabase
-import com.ozaydin.todoapplication.data.ToDoModel
+import com.ozaydin.todoapplication.data.TaskDatabase
+import com.ozaydin.todoapplication.data.Task
+import com.ozaydin.todoapplication.repository.TaskRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class DateTimePickerViewModel : ViewModel() {
-    private var _toDoModel = MutableLiveData<ToDoModel>()
-    val title: LiveData<ToDoModel> get() = _toDoModel
-
-     fun insert(toDoModel: ToDoModel, context : Context) = viewModelScope.launch(Dispatchers.IO) {
-        val db = ToDoDatabase.invoke(context)
-         println("Task : $toDoModel")
-        db.toDoDao().insert(toDoModel = toDoModel)
-    }
+@HiltViewModel
+class AddTaskViewModel@Inject  constructor(private val taskRepository: TaskRepository) : ViewModel() {
+    private var _toDoModel = mutableStateOf<List<Task>>(listOf())
+    val title: MutableState<List<Task>> get() = _toDoModel
 
 
+
+
+      fun saveTask(task: Task) {
+          viewModelScope.launch (Dispatchers.Default){
+              taskRepository.addTask(task)        // is coroutineScope should be used?
+
+          }
+     }
 
 }
+/*
+val listDataState = MutableState<List<Data>> =  mutableStateOf(emptyList<Data>())
+
+//initialize the viewmodel
+init {
+
+    viewModelScope.launch {
+        val data = fetchData()
+        listDataState.value = data
+
+    }
+}
+
+suspend fun fetchData() : List<Data>{
+    //something like:
+    return dataRepository.getData()
+}*/

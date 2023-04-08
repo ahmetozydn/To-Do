@@ -1,8 +1,7 @@
-package com.ozaydin.todoapplication
+package com.ozaydin.todoapplication.di
 
 import android.content.Context
 import androidx.room.Room
-import com.ozaydin.todoapplication.data.Task
 import com.ozaydin.todoapplication.data.TaskDao
 import com.ozaydin.todoapplication.data.TaskDatabase
 import com.ozaydin.todoapplication.repository.TaskRepository
@@ -10,7 +9,6 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.android.scopes.ViewModelScoped
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 

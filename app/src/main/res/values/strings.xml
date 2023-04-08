@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">ToDoApplication</string>
+    <string name="title_activity_date_time_picker">DateTimePicker</string>
 </resources>

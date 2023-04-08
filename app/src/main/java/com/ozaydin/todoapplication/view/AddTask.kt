@@ -2,21 +2,21 @@ package com.ozaydin.todoapplication.view
 
 import android.annotation.SuppressLint
 import android.os.Build
-import android.os.Bundle
-import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,11 +24,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.maxkeppeker.sheets.core.models.base.rememberSheetState
 import com.maxkeppeler.sheets.calendar.CalendarDialog
 import com.maxkeppeler.sheets.calendar.models.CalendarConfig
@@ -36,53 +34,25 @@ import com.maxkeppeler.sheets.calendar.models.CalendarSelection
 import com.maxkeppeler.sheets.clock.ClockDialog
 import com.maxkeppeler.sheets.clock.models.ClockSelection
 import com.ozaydin.todoapplication.R
-import com.ozaydin.todoapplication.data.ToDoModel
-import com.ozaydin.todoapplication.theme.ToDoApplicationTheme
-
-class DateTimePicker : ComponentActivity() {
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            ToDoApplicationTheme {
-                val navController = rememberNavController()
-                // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                   // MainScreen(navController = navController)
-                }
-            }
-        }
-    }
-}
-
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview2() {
-    ToDoApplicationTheme {
-        //MainScreen()
-    }
-}
-
+import com.ozaydin.todoapplication.data.Task
+import com.ozaydin.todoapplication.theme.DarkGreen
+import com.ozaydin.todoapplication.viewmodel.TaskListViewModel
+import kotlinx.coroutines.runBlocking
+import java.util.*
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(navController: NavController) {
+fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
+    var selectedDate = ""
+    var selectedTime = ""
+    //val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy.", Locale.ENGLISH)
     var descriptionTextField = remember {
         mutableStateOf("")
     }
-    //var viewModel: DateTimePickerViewModel = ViewModelProvider(this)[DateTimePickerViewModel::class.java]
-    val title = remember {
-        mutableStateOf(TextFieldValue())
-    }
-    val description = remember {
-        mutableStateOf(TextFieldValue())
+    val titleTextField = remember {
+        mutableStateOf("") //mutableStateOf(TextFieldValue())
     }
     val calendarState = rememberSheetState()
     CalendarDialog(state = calendarState,
@@ -91,12 +61,16 @@ fun MainScreen(navController: NavController) {
             yearSelection = true
         ),
         selection = CalendarSelection.Date { date ->
-            Log.d("SelectedDate: ", "$date")
+            selectedDate = date.toString()
+            println("DATE:  $date")
+            println(selectedDate)
         })
     val clockState = rememberSheetState()
     ClockDialog(state = clockState,
         selection = ClockSelection.HoursMinutes { hours, minutes ->
-            Log.d("SelectedTime", "$hours : $minutes")
+            println("TIME IN HOURS AND MUNITES: , $hours : $minutes")
+            selectedTime = "$hours : $minutes"
+            println(selectedTime)
         }
     )
     Scaffold(
@@ -107,7 +81,8 @@ fun MainScreen(navController: NavController) {
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navController.navigate("home")
+                       // navController.navigate("task_list")
+                        navController.popBackStack()
                     }) {
                         Icon(Icons.Filled.ArrowBack, "backIcon")
                     }
@@ -127,10 +102,10 @@ fun MainScreen(navController: NavController) {
             ) {
                 OutlinedTextField(
                     modifier = Modifier.fillMaxWidth().padding(20.dp, 0.dp),
-                    value = title.value,
+                    value = titleTextField.value,
                     label = { Text(text = "Title") },
                     onValueChange = {
-                        title.value = it
+                        titleTextField.value = it
                     },
                     placeholder = { Text("Enter the title") },
                     singleLine = true
@@ -143,7 +118,6 @@ fun MainScreen(navController: NavController) {
                 SpecialOutlinedTextField(descriptionTextField.value) {
                     descriptionTextField.value = it
                 }
-
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -165,34 +139,40 @@ fun MainScreen(navController: NavController) {
                     }
                 }
 
+
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Date: Time: ")
                 Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedButton(
+                Button(
                     onClick = {
+                        val capitalize = descriptionTextField.value.capitalized()
+                        val capitalizedTitle = titleTextField.value.capitalized()
 
+                        //val id = UUID.randomUUID().toString() unique id
+                        val aTask = Task(capitalizedTitle.trim(),capitalize.trim(),selectedDate,selectedTime,false)
+                        viewModel.saveTask(aTask)
+                        navController.navigate("task_list")
                     },
                     modifier = Modifier.height(45.dp).fillMaxWidth().padding(20.dp, 0.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Gray,
+                        containerColor = DarkGreen,
+                        contentColor = DarkGreen,
                     ),
                     shape = RoundedCornerShape(5.dp),
-                    border = BorderStroke(2.dp, Color.Black)
+                    border = BorderStroke(0.dp, Color.Black)
                 ) {
 
                     Icon(
                         painter = painterResource(id = R.drawable.vc_done),
                         contentDescription = "null",
-                        tint = Color.Black,
+                        tint = Color.White,
                     )
                     Text(
-                        text = "SAVE TASK",
+                        text = "SAVE",
                         textAlign = TextAlign.Center,
-                        fontSize = 20.sp,
-                        color = Color.Black,
-                        fontWeight = FontWeight.Normal,
+                        fontSize = 16.sp,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
                         modifier = Modifier
                             .weight(1f)
                             .offset(x = -12.dp) //default icon width = 24.dp
@@ -200,21 +180,16 @@ fun MainScreen(navController: NavController) {
                 }
             }
         })
-
-
-
-
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SpecialOutlinedTextField(string : String, function: (String)  -> Unit){
+fun SpecialOutlinedTextField(string: String, function: (String) -> Unit) {
     OutlinedTextField(
-        modifier = Modifier.height(160.dp).fillMaxWidth().padding(20.dp, 0.dp),
-        value = string  ,
+        modifier = Modifier.height(160.dp).fillMaxWidth().padding(20.dp, 0.dp).verticalScroll(rememberScrollState()),
+        value = string,
         label = { Text(text = "Description") },
-        onValueChange = function,
+        onValueChange = function ,
 
         placeholder = { Text("Enter the description") },
         maxLines = 5
@@ -222,6 +197,14 @@ fun SpecialOutlinedTextField(string : String, function: (String)  -> Unit){
         /*           label = "Description",
                    placeholder = "Not compulsory"*/
     )
+}
+
+fun String.capitalized(): String {
+    return this.replaceFirstChar {
+        if (it.isLowerCase())
+            it.titlecase(Locale.getDefault())
+        else it.toString()
+    }
 }
 
 
