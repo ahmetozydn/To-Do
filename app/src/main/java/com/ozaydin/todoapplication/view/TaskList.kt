@@ -61,6 +61,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -194,7 +195,7 @@ fun GenerateList(viewModel: TaskListViewModel) {
         println("launched effect***************")
         viewModel.fetchTasks()
     }
-   val  listItems = viewModel._taskList // remember
+    val listItems = viewModel._taskList // remember
     listItems.value.forEach {
         println("title: ")
         println(it.title)
@@ -220,11 +221,11 @@ fun GenerateList(viewModel: TaskListViewModel) {
         println("Inside : Side Effect**********")
         viewModel.fetchTasks()
     }*/
-   // var listItems = remember { mutableStateListOf<Task>() }
+    // var listItems = remember { mutableStateListOf<Task>() }
     val lazyListState = rememberLazyListState()
 
     viewModel._taskList.value.forEach {
-        println("viewmodel._taskList : "+it.title)
+        println("viewmodel._taskList : " + it.title)
     }
     /*LaunchedEffect("unit"){
         list = viewModel.taskList.value
@@ -308,15 +309,23 @@ fun GenerateList(viewModel: TaskListViewModel) {
                                 targetValue =
                                 when (dismissState.targetValue) {
                                     DismissValue.Default -> Color.LightGray
-                                    DismissValue.DismissedToStart -> Color.Red
+                                    DismissValue.DismissedToStart -> CustomRed
                                     else -> Color.Transparent
                                 }
                             )
                             val scale by animateFloatAsState(targetValue = if (dismissState.targetValue == DismissValue.Default) 1f else 1.6f)
 
                             val alignment = Alignment.CenterEnd
-                            Box(contentAlignment= alignment,modifier = Modifier.fillParentMaxSize().background(color = color)) {
-                                Icon (Icons.Default.Delete, contentDescription = "Icon", modifier = Modifier.scale(scale = scale).padding(12.dp),tint = Color.White)
+                            Box(
+                                contentAlignment = alignment,
+                                modifier = Modifier.fillParentMaxSize().background(color = color)
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Icon",
+                                    modifier = Modifier.scale(scale = scale).padding(12.dp),
+                                    tint = Color.White
+                                )
                             }
                         },
 
@@ -334,58 +343,25 @@ fun GenerateList(viewModel: TaskListViewModel) {
 @Composable
 fun GenerateCard(task: Task, dismissState: DismissState, onRemove: (Task) -> Unit) {
 
-    Card(modifier = Modifier.fillMaxSize().padding(2.dp), colors = CardDefaults.cardColors(
-        containerColor = CustomGreen,
-        contentColor = CustomGreen
-    ),) {
+    Card(
+        modifier = Modifier.fillMaxSize().padding(2.dp).shadow(1.dp,shape = RoundedCornerShape(8.dp)), colors = CardDefaults.cardColors(
+            containerColor = Color.White,
+            contentColor = Color.White
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = CustomGray
+        ),
+
+    ) {
         if (task.title != null) {
             Text(
                 modifier = Modifier.padding(12.dp, 4.dp, 2.dp, 2.dp),
                 text = task.title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.DarkGray,
+                color = Color.Black,
                 maxLines = 1
             )
-        }
-           Card(
-        modifier = Modifier
-            .padding(0.dp)
-            .fillMaxWidth(),
-
-
-        shape = RoundedCornerShape(
-            topEnd = 0.dp,
-            topStart = 0.dp,
-            bottomEnd = 6.dp,
-            bottomStart = 6.dp
-        ),
-
-               colors = CardDefaults.cardColors(
-                   containerColor = CustomGray,
-                   contentColor = CustomGray
-               ),
-
-        //elevation = animateDpAsState(if (dismissState.dismissDirection != null) 0.dp else 0.dp).value,
-
-        //background   = MaterialTheme.colorScheme.surface
-    ) {
-        Row() {
-
-            Card(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(6.dp),
-                shape = RoundedCornerShape(
-                    topEnd = 0.dp,
-                    topStart = 0.dp,
-                    bottomEnd = 0.dp,
-                    bottomStart = 0.dp
-                ),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.Black),
-            ) {
-            }
             Column() {
                 Text(
                     modifier = Modifier.padding(12.dp, 4.dp, 2.dp, 2.dp),
@@ -422,7 +398,7 @@ fun GenerateCard(task: Task, dismissState: DismissState, onRemove: (Task) -> Uni
                 }
             }
         }
-    }
+
 
     }
 }
@@ -455,7 +431,7 @@ fun SearchBar(
     BasicTextField(
         modifier = modifier.padding(2.dp).fillMaxWidth(),
         value = text,
-        maxLines= 1,
+        maxLines = 1,
         onValueChange = {
             text = it
             onSearch(it)
