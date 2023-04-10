@@ -1,6 +1,8 @@
 package com.ozaydin.todoapplication.view
 
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
@@ -13,16 +15,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,9 +35,9 @@ import com.maxkeppeler.sheets.clock.ClockDialog
 import com.maxkeppeler.sheets.clock.models.ClockSelection
 import com.ozaydin.todoapplication.R
 import com.ozaydin.todoapplication.data.Task
+import com.ozaydin.todoapplication.theme.CustomGray
 import com.ozaydin.todoapplication.theme.DarkGreen
 import com.ozaydin.todoapplication.viewmodel.TaskListViewModel
-import kotlinx.coroutines.runBlocking
 import java.util.*
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -45,6 +45,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
+    val context = LocalContext.current
     var selectedDate = ""
     var selectedTime = ""
     //val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy.", Locale.ENGLISH)
@@ -69,7 +70,7 @@ fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
     ClockDialog(state = clockState,
         selection = ClockSelection.HoursMinutes { hours, minutes ->
             println("TIME IN HOURS AND MUNITES: , $hours : $minutes")
-            selectedTime = "$hours : $minutes"
+            selectedTime = "$hours:$minutes"
             println(selectedTime)
         }
     )
@@ -108,7 +109,8 @@ fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
                         titleTextField.value = it
                     },
                     placeholder = { Text("Enter the title") },
-                    singleLine = true
+                    singleLine = true,
+                    colors =  TextFieldDefaults.outlinedTextFieldColors(containerColor = CustomGray)
 
 
                     /*           label = "Description",
@@ -147,10 +149,25 @@ fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
                     onClick = {
                         val capitalize = descriptionTextField.value.capitalized()
                         val capitalizedTitle = titleTextField.value.capitalized()
-
+                        //var date = LocalDate.parse(selectedDate) // "dd-MM-yyyy"
                         //val id = UUID.randomUUID().toString() unique id
                         val aTask = Task(capitalizedTitle.trim(),capitalize.trim(),selectedDate,selectedTime,false)
                         viewModel.saveTask(aTask)
+                        println(aTask)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            println("if clause is worked")
+                            val channelId = "TestChannel"
+                            val channelName = "Channel"
+                            val importance = NotificationManager.IMPORTANCE_DEFAULT
+                            val channel = NotificationChannel(channelId, channelName, importance)
+                            val notificationManager = context.getSystemService(NotificationManager::class.java)
+                            notificationManager.createNotificationChannel(channel)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // min API level is 26
+                                createChannel(channelId,context,aTask)
+                                println("if clause is worked +22222222222222222222222222222")
+                            }
+
+                        }
                         navController.navigate("task_list")
                     },
                     modifier = Modifier.height(45.dp).fillMaxWidth().padding(20.dp, 0.dp),
@@ -192,7 +209,9 @@ fun SpecialOutlinedTextField(string: String, function: (String) -> Unit) {
         onValueChange = function ,
 
         placeholder = { Text("Enter the description") },
-        maxLines = 5
+
+        maxLines = 5,
+        colors =  TextFieldDefaults.outlinedTextFieldColors(containerColor = CustomGray)
 
         /*           label = "Description",
                    placeholder = "Not compulsory"*/

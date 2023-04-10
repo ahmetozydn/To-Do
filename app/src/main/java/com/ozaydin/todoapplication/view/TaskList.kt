@@ -1,33 +1,29 @@
 package com.ozaydin.todoapplication.view
 
+// for a `var` variable also add
+// or just
+//import com.ozaydin.todoapplication.viewmodel.TaskListViewModel
+
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.*
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import android.graphics.Paint.Align
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-// for a `var` variable also add
-import androidx.compose.runtime.setValue
-// or just
-import androidx.compose.runtime.*
-import android.view.View
-import android.view.WindowInsets.Side
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -37,61 +33,47 @@ import androidx.compose.material.*
 import androidx.compose.material.DismissDirection.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.materialIcon
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.twotone.Delete
 import androidx.compose.material3.*
-import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.ozaydin.todoapplication.AlarmReceiver
+import com.ozaydin.todoapplication.R
 import com.ozaydin.todoapplication.data.Task
 import com.ozaydin.todoapplication.theme.*
-import com.ozaydin.todoapplication.viewmodel.AddTaskViewModel
+import com.ozaydin.todoapplication.utils.Companion.NOTIFICATION
 import com.ozaydin.todoapplication.viewmodel.TaskListViewModel
-//import com.ozaydin.todoapplication.viewmodel.TaskListViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import javax.annotation.meta.When
-import kotlin.math.roundToInt
+import java.util.*
+
 
 @AndroidEntryPoint
 class TaskList : ComponentActivity() {
@@ -114,7 +96,9 @@ class TaskList : ComponentActivity() {
 
                     composable("task_list") {
                         //val viewModel: TaskListViewModel = viewModel() // by viewModels()
-                        TaskListScreen(navController = navController, taskListViewModel)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            TaskListScreen(navController = navController, taskListViewModel)
+                        }
                     }
                     composable("add_task") { backStackEntry ->
                         //val itemId = backStackEntry.arguments?.getString("itemId")
@@ -128,6 +112,7 @@ class TaskList : ComponentActivity() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.S)
 @Composable
 fun TaskListScreen(navController: NavController, viewModel: TaskListViewModel) {
 
@@ -148,6 +133,7 @@ fun TaskListScreen(navController: NavController, viewModel: TaskListViewModel) {
         //viewModel.fetchTasks()
         GenerateList(viewModel)
         FloatingActionButtons(navController)
+        //NotificationApp()
     }
 }
 
@@ -199,22 +185,6 @@ fun GenerateList(viewModel: TaskListViewModel) {
     listItems.value.forEach {
         println("title: ")
         println(it.title)
-    }
-    val items = remember {
-        mutableStateListOf(
-            Task("1", "lsjdfs", "", "", false),
-            Task("2", "lsjadsfdfs", "", "", false),
-            Task("3", "lsasdgjdfs", "", "", false),
-            Task("4", "lsjfhgfdfs", "", "", false),
-            Task("5", "lsjhdfs", "", "", false),
-            Task("6", "lsjhadfs", "", "", false),
-            Task("7", "lsjdfads", "", "", false),
-            Task("8", "lsjadfs", "", "", false),
-            Task("9", "lsjhgadfs", "", "", false),
-            Task("10", "lsjhdfs", "", "", false),
-            Task("11", "lsjgsadfs", "", "", false),
-            Task("12", "lsjafdfs", "", "", false),
-        )
     }
     val anotherList: SnapshotStateList<Task>
     /*SideEffect {
@@ -314,18 +284,17 @@ fun GenerateList(viewModel: TaskListViewModel) {
                                 }
                             )
                             val scale by animateFloatAsState(targetValue = if (dismissState.targetValue == DismissValue.Default) 1f else 1.6f)
-
                             val alignment = Alignment.CenterEnd
                             Box(
                                 contentAlignment = alignment,
-                                modifier = Modifier.fillParentMaxSize().background(color = color)
+                                modifier = Modifier.fillParentMaxSize().background(color = color, shape = RoundedCornerShape(12.dp)).padding(4.dp),
                             ) {
                                 Icon(
                                     Icons.Default.Delete,
                                     contentDescription = "Icon",
                                     modifier = Modifier.scale(scale = scale).padding(12.dp),
-                                    tint = Color.White
-                                )
+                                    tint = Color.White,
+                                    )
                             }
                         },
 
@@ -344,7 +313,9 @@ fun GenerateList(viewModel: TaskListViewModel) {
 fun GenerateCard(task: Task, dismissState: DismissState, onRemove: (Task) -> Unit) {
 
     Card(
-        modifier = Modifier.fillMaxSize().padding(2.dp).shadow(1.dp,shape = RoundedCornerShape(8.dp)), colors = CardDefaults.cardColors(
+        modifier = Modifier.fillMaxSize().padding(2.dp)
+            .shadow(1.dp, shape = RoundedCornerShape(8.dp)),
+        colors = CardDefaults.cardColors(
             containerColor = Color.White,
             contentColor = Color.White
         ),
@@ -353,7 +324,7 @@ fun GenerateCard(task: Task, dismissState: DismissState, onRemove: (Task) -> Uni
             color = CustomGray
         ),
 
-    ) {
+        ) {
         if (task.title != null) {
             Text(
                 modifier = Modifier.padding(12.dp, 4.dp, 2.dp, 2.dp),
@@ -472,4 +443,164 @@ fun SearchBar(
             }
         }
     )
+}
+
+@RequiresApi(Build.VERSION_CODES.S)
+@Composable
+fun NotificationApp() {
+    val context = LocalContext.current
+    val channelId = "MyTestChannel"
+    val notificationId = 0
+    val myBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.vc_done)
+    val bigText = "This is my test notification in one line. Made it longer " +
+            "by setting the setStyle property. " +
+            "It should not fit in one line anymore, " +
+            "rather show as a longer notification content."
+
+    /*LaunchedEffect(Unit) {
+        createNotificationChannel(channelId, context)
+    }*/
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+
+        // simple notification button
+        /*Button(
+            onClick = {
+                *//*showSimpleNotification(
+                    context,
+                    channelId,
+                    notificationId,
+                    "Simple notification",
+                    "This is a simple notification with default priority."
+                )*//*
+                println("onClicked**************************")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val channelId = "my_channel_id"
+                    val channelName = "My Channel"
+                    val importance = NotificationManager.IMPORTANCE_DEFAULT
+                    val channel = NotificationChannel(channelId, channelName, importance)
+                    val notificationManager = context.getSystemService(NotificationManager::class.java)
+                    notificationManager.createNotificationChannel(channel)
+                    //createNotificationChannel(channelId,context)
+
+                }
+            },
+            modifier = Modifier.padding(top = 16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = DarkGreen,
+                contentColor = DarkGreen,
+            ),
+            shape = RoundedCornerShape(5.dp),
+            border = BorderStroke(0.dp, Color.Black)
+        ) {
+
+            Text(text = "Simple Notification")
+        }*/
+
+
+    }
+}
+
+@SuppressLint("UnspecifiedImmutableFlag")
+@RequiresApi(Build.VERSION_CODES.S)
+fun createChannel(channelId: String, context: Context, task: Task) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { // API 26
+        val (hours, min) = task.time!!.split(":").map { it.toInt() }
+        val calendar = Calendar.getInstance()
+        //calendar.set(Calendar.MONTH,(4))
+        //calendar.set(Calendar.YEAR,2023)
+        //calendar.set(Calendar.DAY_OF_MONTH, 10)
+        calendar.set(Calendar.HOUR_OF_DAY, hours)
+        calendar.set(Calendar.MINUTE, min)
+        calendar.set(Calendar.SECOND, 0)
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = System.currentTimeMillis()
+        cal.clear()
+        cal.set(2023, 4, 10, hours, min, 0)
+        /*if (calendar.getTimeInMillis() < System.currentTimeMillis()) {
+            calendar.add(Calendar.DAY_OF_YEAR, 30);
+        }*/
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.vc_done)
+            .setContentTitle(task.title)
+            .setContentText(task.description)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            //.setAutoCancel(true)
+            .setVisibility(VISIBILITY_PUBLIC).build()
+        println("the value of calendar is :  ${calendar.time}")
+        // Create an intent to launch the notification
+        val intent = Intent(context, AlarmReceiver::class.java)
+        intent.putExtra(NOTIFICATION, notification )
+        val pendingIntent =
+            PendingIntent.getBroadcast(context, (0..100000).random(), intent, PendingIntent.FLAG_MUTABLE)
+        val pendingIntent1 = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // API 31
+            PendingIntent.getBroadcast(context, (0..100000).random(), intent, PendingIntent.FLAG_MUTABLE)
+        } else {
+            PendingIntent.getBroadcast(context, (0..100000).random(), intent, PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        }
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+        alarmManager?.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent1) //was setExact
+
+
+// Schedule the notification to be displayed at the specified time
+
+        // Register the channel with the system. You can't change the importance
+        // or other notification behaviors after this.
+        /*val notificationManager: NotificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)*/
+    }
+}
+
+private fun createNotificationsChannels(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val channel = NotificationChannel(
+            "getString(R.string.app_name)",
+            "getString(R.string.app_name)",
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        ContextCompat.getSystemService(context, NotificationManager::class.java)
+            ?.createNotificationChannel(channel)
+    }
+}
+
+// shows notification with a title and one-line content text
+fun showSimpleNotification(
+    context: Context,
+    channelId: String,
+    notificationId: Int,
+    textTitle: String,
+    textContent: String,
+    priority: Int = NotificationCompat.PRIORITY_DEFAULT
+) {
+    val builder = NotificationCompat.Builder(context, channelId)
+        .setSmallIcon(R.drawable.vc_done)
+        .setContentTitle(textTitle)
+        .setContentText(textContent)
+        .setPriority(priority)
+        .setVisibility(VISIBILITY_PUBLIC)
+
+    // show the notification
+    with(NotificationManagerCompat.from(context)) {
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return
+        }
+        notify(notificationId, builder.build())
+    }
 }

@@ -1,11 +1,13 @@
 package com.ozaydin.todoapplication.data
 
+import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
+import kotlinx.parcelize.Parcelize
 import java.util.*
-
+@Parcelize
 @Entity(tableName = "task") // var changed to val!
 data class Task(
     @ColumnInfo(name = "title")
@@ -16,11 +18,11 @@ data class Task(
     val date: String? = null,
     @ColumnInfo(name = "time")
     val time: String? = null,     // LocalDateTime or LocalDate or Date which one should be used?
-    @ColumnInfo(name = "is_done")
+    @ColumnInfo(name = "is_done") // request_code for alarm
     val isDone: Boolean? = null,
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0
-)
+) :Parcelable
 /*
     category, color sections can be added to the database.
  */
