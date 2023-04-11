@@ -1,17 +1,10 @@
 package com.ozaydin.todoapplication.view
 
-// for a `var` variable also add
-// or just
-//import com.ozaydin.todoapplication.viewmodel.TaskListViewModel
-
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
-import android.graphics.Paint.Align
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -34,56 +27,49 @@ import androidx.compose.material.DismissDirection.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.ozaydin.todoapplication.AlarmReceiver
+import com.google.accompanist.permissions.*
+import com.ozaydin.todoapplication.notification.AlarmReceiver
 import com.ozaydin.todoapplication.R
 import com.ozaydin.todoapplication.data.Task
 import com.ozaydin.todoapplication.theme.*
-import com.ozaydin.todoapplication.utils.Companion.NOTIFICATION
-import com.ozaydin.todoapplication.viewmodel.TaskListViewModel
+import com.ozaydin.todoapplication.utils.Util.Companion.NOTIFICATION
+import com.ozaydin.todoapplication.viewmodel.ViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import java.text.SimpleDateFormat
 import java.util.*
-
 
 @AndroidEntryPoint
 class TaskList : ComponentActivity() {
-    //private val fooViewModel: TaskListViewModel by viewModels()
     //@Inject lateinit var taskListViewModel: TaskListViewModel
-    private val taskListViewModel: TaskListViewModel by viewModels()
+    private val taskListViewModel: ViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
         setContent {
             ToDoApplicationTheme {
@@ -92,68 +78,81 @@ class TaskList : ComponentActivity() {
                     navController = navController,
                     startDestination = "task_list"
                 ) {
-                    //val taskListViewModel: TaskListViewModel by viewModels()
-
                     composable("task_list") {
-                        //val viewModel: TaskListViewModel = viewModel() // by viewModels()
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            TaskListScreen(navController = navController, taskListViewModel)
-                        }
+                        TaskListScreen(navController = navController, taskListViewModel)
                     }
                     composable("add_task") { backStackEntry ->
                         //val itemId = backStackEntry.arguments?.getString("itemId")
                         AddTaskScreen(navController = navController, taskListViewModel)
                     }
                 }
-                // A surface container using the 'background' color from the theme
-
             }
         }
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun TaskListScreen(navController: NavController, viewModel: TaskListViewModel) {
+fun TaskListScreen(navController: NavController, viewModel: ViewModel) {
+    /* val notificationPermissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+         rememberPermissionState(
+             android.Manifest.permission.POST_NOTIFICATIONS
+         )
+     } else {
+         TODO("VERSION.SDK_INT < TIRAMISU")
+     }*/
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        RequestPermission(permission = Manifest.permission.POST_NOTIFICATIONS)
+    }
 
-    // val owner = LocalViewModelStoreOwner.current
 
-/*
-    owner?.let { val viewModel: TaskListViewModel = viewModel(
-            it,
-            "TaskListViewModel",
-            MainViewModelFactory(
-                LocalContext.current.applicationContext
-                        as Application
-            )*/
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        //viewModel.fetchTasks()
+
         GenerateList(viewModel)
         FloatingActionButtons(navController)
-        //NotificationApp()
+        /*LaunchedEffect(key1 = true){
+             notificationPermissionState.launchPermissionRequest()
+         }
+
+         if (notificationPermissionState.status.isGranted) {
+             Text("Camera permission Granted")
+         } else {
+             Column {
+                 val textToShow = if (notificationPermissionState.status.shouldShowRationale) {
+                     "The camera is important for this app. Please grant the permission."
+                 } else {
+                     "Camera permission required for this feature to be available. " +
+                             "Please grant the permission"
+                 }
+                 Text(textToShow)
+                 Button(
+                     onClick = {
+                         //notificationPermissionState.launchPermissionRequest()
+                         println("onclicked***************************")
+                     }, shape = RoundedCornerShape(8.dp),
+                     colors = ButtonDefaults.buttonColors(
+                         containerColor = DarkGreen,
+                         contentColor = Color.White,
+                     )
+                 ) {
+                     Text(text = "Pick a Time")
+                 }
+             }
+         }*/
     }
 }
 
 @Composable
 fun FloatingActionButtons(navController: NavController) {
-    val mContext = LocalContext.current
-
-    // on the below line we are creating a column.
     Column(
-        // on below line we are adding a modifier to it
-        // and setting max size, max height and max width
         modifier = Modifier
-
             .fillMaxSize()
             .fillMaxHeight()
             .fillMaxWidth()
-            .padding(10.dp),
-
-        // on below line we are adding vertical
-        // arrangement and horizontal alignment.
+            .padding(14.dp),
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.End
     ) {
@@ -176,32 +175,20 @@ fun FloatingActionButtons(navController: NavController) {
     ExperimentalFoundationApi::class
 )
 @Composable
-fun GenerateList(viewModel: TaskListViewModel) {
-    LaunchedEffect(key1 = true) {
-        println("launched effect***************")
+fun GenerateList(viewModel: ViewModel) {
+    LaunchedEffect(key1 = true) { // unit
+        println("launched effect triggered")
         viewModel.fetchTasks()
     }
-    val listItems = viewModel._taskList // remember
-    listItems.value.forEach {
-        println("title: ")
-        println(it.title)
-    }
-    val anotherList: SnapshotStateList<Task>
+    val listItems = viewModel._taskList // remember gives MutableStateList
+
     /*SideEffect {
         println("Inside : Side Effect**********")
         viewModel.fetchTasks()
     }*/
-    // var listItems = remember { mutableStateListOf<Task>() }
     val lazyListState = rememberLazyListState()
 
-    viewModel._taskList.value.forEach {
-        println("viewmodel._taskList : " + it.title)
-    }
-    /*LaunchedEffect("unit"){
-        list = viewModel.taskList.value
-    }*/
     ///var list by remember { mutableStateListOf<Task>(emptyList())}//val list by remember{viewModel.taskList} // or directly use viewModel.taskList
-    //list = viewModel.taskList.value as SnapshotStateList<Task>
     //var tasks = remember { viewModel._taskList } .toMutableStateList
     //var x = viewModel(TaskListViewModel::class.java)
     //val tasks = viewModel._taskList.value.toMutableStateList()
@@ -209,7 +196,6 @@ fun GenerateList(viewModel: TaskListViewModel) {
     //val tasks1: List<Task>? by viewModel._taskList.value.toMutableStateList()
     Column {
         SearchBar(
-            viewModel,
             hint = "Search...",
             modifier = Modifier
                 .fillMaxWidth()
@@ -254,7 +240,6 @@ fun GenerateList(viewModel: TaskListViewModel) {
                             dismissState.snapTo(DismissValue.DismissedToStart)
                         }
                     }*/
-                    println("generating list... *************************")
                     val state = rememberDismissState(
                         confirmStateChange = {
                             when (it) {
@@ -274,7 +259,7 @@ fun GenerateList(viewModel: TaskListViewModel) {
                         directions = setOf(EndToStart),
                         modifier = Modifier.fillMaxWidth().animateItemPlacement(),
                         background = {
-                            val direction = dismissState.dismissDirection ?: return@SwipeToDismiss
+                            //val direction = dismissState.dismissDirection ?: return@SwipeToDismiss
                             val color by animateColorAsState(
                                 targetValue =
                                 when (dismissState.targetValue) {
@@ -284,8 +269,7 @@ fun GenerateList(viewModel: TaskListViewModel) {
                                 }
                             )
                             val scale by animateFloatAsState(targetValue = if (dismissState.targetValue == DismissValue.Default) 1f else 1.6f)
-                            val alignment = Alignment.CenterEnd
-                            Box(
+                            /*Box(
                                 contentAlignment = alignment,
                                 modifier = Modifier.fillParentMaxSize().background(color = color, shape = RoundedCornerShape(12.dp)).padding(4.dp),
                             ) {
@@ -295,11 +279,26 @@ fun GenerateList(viewModel: TaskListViewModel) {
                                     modifier = Modifier.scale(scale = scale).padding(12.dp),
                                     tint = Color.White,
                                     )
+                            }*/
+                            Row(
+                                modifier = Modifier.fillParentMaxSize().padding(3.dp)
+                                    .background(color = color, shape = RoundedCornerShape(12.dp))
+                                    .padding(4.dp),
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically
+                            )
+                            {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Icon",
+                                    modifier = Modifier.scale(scale = scale).padding(12.dp),
+                                    tint = Color.White,
+                                )
                             }
                         },
 
                         dismissContent = {
-                            GenerateCard(item, state) {}
+                            GenerateCard(item) {}
                         }
                     )
                 }
@@ -310,10 +309,18 @@ fun GenerateList(viewModel: TaskListViewModel) {
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun GenerateCard(task: Task, dismissState: DismissState, onRemove: (Task) -> Unit) {
-
+fun GenerateCard(task: Task, onRemove: (Task) -> Unit) {
+    val (year, month, day) = task.date!!.split("-").map {
+        it.toInt()
+    }
+    val calendar = Calendar.getInstance()
+    calendar.set(Calendar.MONTH, month - 1)
+    val abbreviatedMonth = SimpleDateFormat("LLL", Locale.getDefault()).format(calendar.time)
+    println("abbbbbbbbbbbbbbbbbbbbbbbbriviared time is :  $abbreviatedMonth")
+    calendar.set(Calendar.MONTH, month)
+    println("the calendar is +++++++++++++++01           :   $calendar")
     Card(
-        modifier = Modifier.fillMaxSize().padding(2.dp)
+        modifier = Modifier.fillMaxSize().padding(3.dp)
             .shadow(1.dp, shape = RoundedCornerShape(8.dp)),
         colors = CardDefaults.cardColors(
             containerColor = Color.White,
@@ -333,7 +340,7 @@ fun GenerateCard(task: Task, dismissState: DismissState, onRemove: (Task) -> Uni
                 color = Color.Black,
                 maxLines = 1
             )
-            Column() {
+            Column {
                 Text(
                     modifier = Modifier.padding(12.dp, 4.dp, 2.dp, 2.dp),
                     text = task.description!!,
@@ -342,7 +349,7 @@ fun GenerateCard(task: Task, dismissState: DismissState, onRemove: (Task) -> Uni
                     maxLines = 1,
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth(1f),
+                    modifier = Modifier.fillMaxWidth(1f).padding(0.dp, 0.dp, 8.dp, 2.dp),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -350,19 +357,9 @@ fun GenerateCard(task: Task, dismissState: DismissState, onRemove: (Task) -> Uni
                         Text(
                             modifier = Modifier.padding(12.dp, 0.dp, 2.dp, 0.dp),
                             textAlign = TextAlign.End,
-                            text = it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Blue,
-                            maxLines = 1,
-                        )
-                    }
-                    task.date?.let {
-                        Text(
-                            modifier = Modifier.padding(4.dp, 0.dp, 2.dp, 0.dp),
-                            textAlign = TextAlign.Right,
-                            text = it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Blue,
+                            text = "$it $abbreviatedMonth $day, $year",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = CustomGreen,
                             maxLines = 1,
                         )
                     }
@@ -374,11 +371,6 @@ fun GenerateCard(task: Task, dismissState: DismissState, onRemove: (Task) -> Uni
     }
 }
 
-fun <T> SnapshotStateList<T>.swapList(newList: List<T>) {
-    clear()
-    addAll(newList)
-}
-
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
@@ -388,7 +380,6 @@ fun DefaultPreview() {
 
 @Composable
 fun SearchBar(
-    viewModel: TaskListViewModel,
     modifier: Modifier = Modifier,
     hint: String = "Search...",
     onSearch: (String) -> Unit = {}
@@ -445,162 +436,164 @@ fun SearchBar(
     )
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
-@Composable
-fun NotificationApp() {
-    val context = LocalContext.current
-    val channelId = "MyTestChannel"
-    val notificationId = 0
-    val myBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.vc_done)
-    val bigText = "This is my test notification in one line. Made it longer " +
-            "by setting the setStyle property. " +
-            "It should not fit in one line anymore, " +
-            "rather show as a longer notification content."
-
-    /*LaunchedEffect(Unit) {
-        createNotificationChannel(channelId, context)
-    }*/
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-
-        // simple notification button
-        /*Button(
-            onClick = {
-                *//*showSimpleNotification(
-                    context,
-                    channelId,
-                    notificationId,
-                    "Simple notification",
-                    "This is a simple notification with default priority."
-                )*//*
-                println("onClicked**************************")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val channelId = "my_channel_id"
-                    val channelName = "My Channel"
-                    val importance = NotificationManager.IMPORTANCE_DEFAULT
-                    val channel = NotificationChannel(channelId, channelName, importance)
-                    val notificationManager = context.getSystemService(NotificationManager::class.java)
-                    notificationManager.createNotificationChannel(channel)
-                    //createNotificationChannel(channelId,context)
-
-                }
-            },
-            modifier = Modifier.padding(top = 16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = DarkGreen,
-                contentColor = DarkGreen,
-            ),
-            shape = RoundedCornerShape(5.dp),
-            border = BorderStroke(0.dp, Color.Black)
-        ) {
-
-            Text(text = "Simple Notification")
-        }*/
-
-
-    }
-}
 
 @SuppressLint("UnspecifiedImmutableFlag")
-@RequiresApi(Build.VERSION_CODES.S)
 fun createChannel(channelId: String, context: Context, task: Task) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { // API 26
-        val (hours, min) = task.time!!.split(":").map { it.toInt() }
-        val calendar = Calendar.getInstance()
-        //calendar.set(Calendar.MONTH,(4))
-        //calendar.set(Calendar.YEAR,2023)
-        //calendar.set(Calendar.DAY_OF_MONTH, 10)
-        calendar.set(Calendar.HOUR_OF_DAY, hours)
-        calendar.set(Calendar.MINUTE, min)
-        calendar.set(Calendar.SECOND, 0)
-        val cal = Calendar.getInstance()
-        cal.timeInMillis = System.currentTimeMillis()
-        cal.clear()
-        cal.set(2023, 4, 10, hours, min, 0)
-        /*if (calendar.getTimeInMillis() < System.currentTimeMillis()) {
-            calendar.add(Calendar.DAY_OF_YEAR, 30);
-        }*/
-        val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.vc_done)
-            .setContentTitle(task.title)
-            .setContentText(task.description)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            //.setAutoCancel(true)
-            .setVisibility(VISIBILITY_PUBLIC).build()
-        println("the value of calendar is :  ${calendar.time}")
-        // Create an intent to launch the notification
-        val intent = Intent(context, AlarmReceiver::class.java)
-        intent.putExtra(NOTIFICATION, notification )
-        val pendingIntent =
-            PendingIntent.getBroadcast(context, (0..100000).random(), intent, PendingIntent.FLAG_MUTABLE)
-        val pendingIntent1 = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // API 31
-            PendingIntent.getBroadcast(context, (0..100000).random(), intent, PendingIntent.FLAG_MUTABLE)
-        } else {
-            PendingIntent.getBroadcast(context, (0..100000).random(), intent, PendingIntent.FLAG_UPDATE_CURRENT
-            )
-        }
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
-        alarmManager?.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent1) //was setExact
+        val (hours, min) = task.time!!.split(":").map { it.toInt() }
+        val (year, month, day) = task.date!!.split("-")
+            .map { it.toInt() } // if the date is saved as null, app always crushes
+        val calendar = Calendar.getInstance()
+        //calendar.set(Calendar.AM_PM, Calendar.AM);
 
+        /*calendar.timeInMillis = System.currentTimeMillis()
+        calendar.clear()*/
+        calendar.set(year, month - 1, day, hours, min)
+        if (calendar.timeInMillis >= System.currentTimeMillis()) {
+            val notification = NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(R.drawable.vc_done)
+                .setContentTitle(task.title)
+                .setContentText(task.description)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                //.setAutoCancel(true)
+                .setVisibility(VISIBILITY_PUBLIC).build()
+            println("the value of calendar is :  ${calendar.time}")
+            // Create an intent to launch the notification
+            val intent = Intent(context, AlarmReceiver::class.java)
+            intent.putExtra(NOTIFICATION, notification)
 
-// Schedule the notification to be displayed at the specified time
-
-        // Register the channel with the system. You can't change the importance
-        // or other notification behaviors after this.
-        /*val notificationManager: NotificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel)*/
-    }
-}
-
-private fun createNotificationsChannels(context: Context) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val channel = NotificationChannel(
-            "getString(R.string.app_name)",
-            "getString(R.string.app_name)",
-            NotificationManager.IMPORTANCE_HIGH
-        )
-        ContextCompat.getSystemService(context, NotificationManager::class.java)
-            ?.createNotificationChannel(channel)
-    }
-}
-
-// shows notification with a title and one-line content text
-fun showSimpleNotification(
-    context: Context,
-    channelId: String,
-    notificationId: Int,
-    textTitle: String,
-    textContent: String,
-    priority: Int = NotificationCompat.PRIORITY_DEFAULT
-) {
-    val builder = NotificationCompat.Builder(context, channelId)
-        .setSmallIcon(R.drawable.vc_done)
-        .setContentTitle(textTitle)
-        .setContentText(textContent)
-        .setPriority(priority)
-        .setVisibility(VISIBILITY_PUBLIC)
-
-    // show the notification
-    with(NotificationManagerCompat.from(context)) {
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return
+            val pendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // API 31
+                PendingIntent.getBroadcast(
+                    context,
+                    (0..100000).random(),
+                    intent,
+                    PendingIntent.FLAG_MUTABLE
+                )
+            } else {
+                PendingIntent.getBroadcast(
+                    context, (0..100000).random(), intent, PendingIntent.FLAG_UPDATE_CURRENT
+                )
+            }
+            alarmManager?.setExact(
+                AlarmManager.RTC_WAKEUP,
+                calendar.timeInMillis,
+                pendingIntent
+            ) //was setExact
         }
-        notify(notificationId, builder.build())
     }
+}
+
+private fun createNotification(context: Context): Notification {
+    return TODO()
+}
+
+@ExperimentalPermissionsApi
+@Composable
+fun RequestPermission(
+    permission: String,
+    deniedMessage: String = "Give this app a permission to proceed. If it doesn't work, then you'll have to do it manually from the settings.",
+    rationaleMessage: String = "To use this app's functionalities, you need to give us the permission.",
+) {
+    val permissionState = rememberPermissionState(permission)
+
+    HandleRequest(
+        permissionState = permissionState,
+        deniedContent = { shouldShowRationale ->
+            PermissionDeniedContent(
+                deniedMessage = deniedMessage,
+                rationaleMessage = rationaleMessage,
+                shouldShowRationale = shouldShowRationale,
+                onRequestPermission = { permissionState.launchPermissionRequest() }
+            )
+        },
+        content = {
+            Content(
+                text = "PERMISSION GRANTED!",
+                showButton = false
+            ) {}
+        }
+    )
+}
+
+@ExperimentalPermissionsApi
+@Composable
+private fun HandleRequest(
+    permissionState: PermissionState,
+    deniedContent: @Composable (Boolean) -> Unit,
+    content: @Composable () -> Unit
+) {
+    when (permissionState.status) {
+        is PermissionStatus.Granted -> {
+            content()
+        }
+        is PermissionStatus.Denied -> {
+            deniedContent(permissionState.status.shouldShowRationale)
+        }
+    }
+}
+
+@Composable
+fun Content(text: String, showButton: Boolean = true, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(50.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = text, textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(12.dp))
+        if (showButton) {
+            Button(
+                onClick = onClick, colors = ButtonDefaults.buttonColors(
+                    containerColor = DarkGreen,
+                    contentColor = DarkGreen,
+                )
+            ) {
+                Text(text = "Request")
+            }
+        }
+    }
+}
+
+@ExperimentalPermissionsApi
+@Composable
+fun PermissionDeniedContent(
+    deniedMessage: String,
+    rationaleMessage: String,
+    shouldShowRationale: Boolean,
+    onRequestPermission: () -> Unit
+) {
+    if (shouldShowRationale) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = {
+                Text(
+                    text = "Permission Request",
+                    style = TextStyle(
+                        fontSize = MaterialTheme.typography.headlineMedium.fontSize,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            },
+            text = {
+                Text(rationaleMessage)
+            },
+            confirmButton = {
+                Button(
+                    onClick = onRequestPermission,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = DarkGreen,
+                        contentColor = DarkGreen,
+                    ),
+                ) {
+                    Text("Give Permission")
+                }
+            }
+        )
+    } else {
+        Content(text = deniedMessage, onClick = onRequestPermission)
+    }
+
 }

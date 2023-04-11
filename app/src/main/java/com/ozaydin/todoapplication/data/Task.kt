@@ -18,7 +18,7 @@ data class Task(
     val date: String? = null,
     @ColumnInfo(name = "time")
     val time: String? = null,     // LocalDateTime or LocalDate or Date which one should be used?
-    @ColumnInfo(name = "is_done") // request_code for alarm
+    @ColumnInfo(name = "is_done") // request_code for alarm must unique
     val isDone: Boolean? = null,
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0

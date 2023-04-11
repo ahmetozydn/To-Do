@@ -37,19 +37,21 @@ import com.ozaydin.todoapplication.R
 import com.ozaydin.todoapplication.data.Task
 import com.ozaydin.todoapplication.theme.CustomGray
 import com.ozaydin.todoapplication.theme.DarkGreen
-import com.ozaydin.todoapplication.viewmodel.TaskListViewModel
+import com.ozaydin.todoapplication.utils.Util.Companion.CHANNEL_ID
+import com.ozaydin.todoapplication.utils.Util.Companion.CHANNEL_NAME
+import com.ozaydin.todoapplication.viewmodel.ViewModel
 import java.util.*
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
+fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
     val context = LocalContext.current
     var selectedDate = ""
     var selectedTime = ""
     //val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy.", Locale.ENGLISH)
-    var descriptionTextField = remember {
+    val descriptionTextField = remember {
         mutableStateOf("")
     }
     val titleTextField = remember {
@@ -69,7 +71,7 @@ fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
     val clockState = rememberSheetState()
     ClockDialog(state = clockState,
         selection = ClockSelection.HoursMinutes { hours, minutes ->
-            println("TIME IN HOURS AND MUNITES: , $hours : $minutes")
+            println("TIME IN HOURS AND MINUTES: , $hours : $minutes")
             selectedTime = "$hours:$minutes"
             println(selectedTime)
         }
@@ -82,7 +84,7 @@ fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                       // navController.navigate("task_list")
+                        // navController.navigate("task_list")
                         navController.popBackStack()
                     }) {
                         Icon(Icons.Filled.ArrowBack, "backIcon")
@@ -110,7 +112,7 @@ fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
                     },
                     placeholder = { Text("Enter the title") },
                     singleLine = true,
-                    colors =  TextFieldDefaults.outlinedTextFieldColors(containerColor = CustomGray)
+                    colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = CustomGray)
 
 
                     /*           label = "Description",
@@ -123,20 +125,42 @@ fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row() {
+                Row(modifier = Modifier.padding(20.dp, 0.dp).fillMaxWidth()) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
                             calendarState.show()
                         }, modifier = Modifier.padding(12.dp, 0.dp),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = DarkGreen,
+                            contentColor = Color.White,
+                        )
                     ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.vc_time),
+                            contentDescription = "null",
+                            tint = Color.White,
+                            modifier = Modifier.padding(0.dp, 0.dp, 16.dp, 0.dp)
+                        )
                         Text(text = "Pick a Date")
                     }
                     Spacer(modifier = Modifier.height(20.dp))
-                    Button(onClick = {
-                        clockState.show()
-                    }, shape = RoundedCornerShape(8.dp)) {
+                    Button(
+                        onClick = {
+                            clockState.show()
+                        }, shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = DarkGreen,
+                            contentColor = Color.White,
+                        )
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.vc_date),
+                            contentDescription = "null",
+                            tint = Color.White,
+                            modifier = Modifier.padding(0.dp, 0.dp, 16.dp, 0.dp)
+                        )
                         Text(text = "Pick a Time")
                     }
                 }
@@ -151,26 +175,30 @@ fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
                         val capitalizedTitle = titleTextField.value.capitalized()
                         //var date = LocalDate.parse(selectedDate) // "dd-MM-yyyy"
                         //val id = UUID.randomUUID().toString() unique id
-                        val aTask = Task(capitalizedTitle.trim(),capitalize.trim(),selectedDate,selectedTime,false)
+                        val aTask = Task(
+                            capitalizedTitle.trim(),
+                            capitalize.trim(),
+                            selectedDate,
+                            selectedTime,
+                            false
+                        )
                         viewModel.saveTask(aTask)
                         println(aTask)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            println("if clause is worked")
-                            val channelId = "TestChannel"
-                            val channelName = "Channel"
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {  // API 26
+                            val channelId = CHANNEL_ID
+                            val channelName = CHANNEL_NAME
                             val importance = NotificationManager.IMPORTANCE_DEFAULT
                             val channel = NotificationChannel(channelId, channelName, importance)
-                            val notificationManager = context.getSystemService(NotificationManager::class.java)
+                            val notificationManager =
+                                context.getSystemService(NotificationManager::class.java)
                             notificationManager.createNotificationChannel(channel)
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // min API level is 26
-                                createChannel(channelId,context,aTask)
-                                println("if clause is worked +22222222222222222222222222222")
-                            }
-
+                            /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // min API level is 31
+                            }*/
+                            createChannel(channelId, context, aTask)
                         }
                         navController.navigate("task_list")
                     },
-                    modifier = Modifier.height(45.dp).fillMaxWidth().padding(20.dp, 0.dp),
+                    modifier = Modifier.height(60.dp).fillMaxWidth().padding(20.dp, 0.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = DarkGreen,
                         contentColor = DarkGreen,
@@ -192,7 +220,7 @@ fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier
                             .weight(1f)
-                            .offset(x = -12.dp) //default icon width = 24.dp
+                            .offset(x = (-12).dp) //default icon width = 24.dp
                     )
                 }
             }
@@ -203,15 +231,16 @@ fun AddTaskScreen(navController: NavController,viewModel: TaskListViewModel) {
 @Composable
 fun SpecialOutlinedTextField(string: String, function: (String) -> Unit) {
     OutlinedTextField(
-        modifier = Modifier.height(160.dp).fillMaxWidth().padding(20.dp, 0.dp).verticalScroll(rememberScrollState()),
+        modifier = Modifier.height(160.dp).fillMaxWidth().padding(20.dp, 0.dp)
+            .verticalScroll(rememberScrollState()),
         value = string,
         label = { Text(text = "Description") },
-        onValueChange = function ,
+        onValueChange = function,
 
         placeholder = { Text("Enter the description") },
 
         maxLines = 5,
-        colors =  TextFieldDefaults.outlinedTextFieldColors(containerColor = CustomGray)
+        colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = CustomGray)
 
         /*           label = "Description",
                    placeholder = "Not compulsory"*/
@@ -225,5 +254,7 @@ fun String.capitalized(): String {
         else it.toString()
     }
 }
+
+private fun getUniqueId() = ((System.currentTimeMillis() % 10000).toInt())
 
 

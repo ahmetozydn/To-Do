@@ -102,7 +102,9 @@ dependencies {
     //swipe and reveal lib.
     implementation 'de.charlex.compose:revealswipe:1.0.0'
 
-//notification lib.
+    //permission lib. must match with compose version
+    implementation "com.google.accompanist:accompanist-permissions:0.25.1"
+
 
 }
 

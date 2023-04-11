@@ -1,23 +1,19 @@
 package com.ozaydin.todoapplication.viewmodel
 
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.*
-import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ozaydin.todoapplication.data.Task
 import com.ozaydin.todoapplication.repository.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 
 @HiltViewModel
-class TaskListViewModel @Inject constructor(private val taskRepository: TaskRepository) :
+class ViewModel @Inject constructor(private val taskRepository: TaskRepository) :
     ViewModel() {
     //var _taskList = mutableStateOf<List<Task>>(listOf()) // MutableState<List<Task>>
     //var taskList: MutableState<List<Task>> = _taskList

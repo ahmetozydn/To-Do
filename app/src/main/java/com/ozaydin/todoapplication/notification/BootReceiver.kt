@@ -1,15 +1,14 @@
-package com.ozaydin.todoapplication
+package com.ozaydin.todoapplication.notification
 
 import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.ozaydin.todoapplication.R
 
 class BootReceiver : BroadcastReceiver() {
     /*
