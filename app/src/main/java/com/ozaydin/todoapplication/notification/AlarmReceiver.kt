@@ -11,14 +11,16 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
-import com.ozaydin.todoapplication.R
 import com.ozaydin.todoapplication.utils.Util.Companion.NOTIFICATION
+
+
 /*
 Android13: We have full control when we want to ask the user for permission
 Android 12L or lower: The system will show the permission dialog when the app creates its first notification channel*/
 
 // the notification and channel can be created here
 class AlarmReceiver : BroadcastReceiver() {
+
 
     override fun onReceive(context: Context, intent: Intent) {
 
@@ -35,6 +37,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
+
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -44,6 +47,8 @@ class AlarmReceiver : BroadcastReceiver() {
             // for ActivityCompat#requestPermissions for more details.
             return
         }
+
+        // Show the notification
         if (notification != null) {
             notificationManager.notify(0, notification) // change the 0 value and test
         }

@@ -3,14 +3,24 @@ package com.ozaydin.todoapplication.view
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.*
+import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.transition.Visibility
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -39,13 +49,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC
 import androidx.navigation.NavController
@@ -67,10 +82,28 @@ import java.util.*
 class TaskList : ComponentActivity() {
     //@Inject lateinit var taskListViewModel: TaskListViewModel
     private val taskListViewModel: ViewModel by viewModels()
+    private lateinit var permissionLauncher: ActivityResultLauncher<String>
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        permissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { result ->
+                if (result) {
+                    if (ActivityCompat.checkSelfPermission(
+                            this,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+
+                    }
+
+                } else {
+                    //permission denied
+                    Toast.makeText(this, "Permission needed!", Toast.LENGTH_LONG).show()
+                }
+
+            }
         setContent {
             ToDoApplicationTheme {
                 val navController = rememberNavController()
@@ -89,11 +122,58 @@ class TaskList : ComponentActivity() {
             }
         }
     }
+/*    private fun onStatusChanged() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
+            ) { // android decides here
+                Snackbar {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+
+                }
+            } else {
+                //request permission
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            return
+        } else {
+            //permission granted
+
+        }
+    }*/
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun TaskListScreen(navController: NavController, viewModel: ViewModel) {
+    LaunchedEffect(key1 = true){
+        viewModel.fetchTasks()
+    }
+    var isSearchResultEmpty by remember { viewModel.isSeachListEmpty }
+    val isListEmpty by remember { viewModel.isListEmpty }
+    val itemsList by viewModel._taskList
+
+    GenerateList(viewModel, navController, isListEmpty, itemsList,isSearchResultEmpty)
+
+    /* Box(contentAlignment = Alignment.Center,
+         modifier = Modifier.fillMaxSize()){
+
+             Box(
+                 contentAlignment = Alignment.Center,
+                 modifier = Modifier.fillMaxSize()
+             ) {
+                 ShowEmptyListMessage()
+         }
+     }*/
+
+    //RequestPermission(permission = Manifest.permission.POST_NOTIFICATIONS)
+
     /* val notificationPermissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
          rememberPermissionState(
              android.Manifest.permission.POST_NOTIFICATIONS
@@ -101,72 +181,121 @@ fun TaskListScreen(navController: NavController, viewModel: ViewModel) {
      } else {
          TODO("VERSION.SDK_INT < TIRAMISU")
      }*/
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        RequestPermission(permission = Manifest.permission.POST_NOTIFICATIONS)
-    }
 
+    /*LaunchedEffect(key1 = true) { // unit
+        println("launched effect triggered")
+        viewModel.fetchTasks()
+    }*/
+    /*LaunchedEffect(key1 = true){
+         notificationPermissionState.launchPermissionRequest()
+     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-
-        GenerateList(viewModel)
-        FloatingActionButtons(navController)
-        /*LaunchedEffect(key1 = true){
-             notificationPermissionState.launchPermissionRequest()
-         }
-
-         if (notificationPermissionState.status.isGranted) {
-             Text("Camera permission Granted")
-         } else {
-             Column {
-                 val textToShow = if (notificationPermissionState.status.shouldShowRationale) {
-                     "The camera is important for this app. Please grant the permission."
-                 } else {
-                     "Camera permission required for this feature to be available. " +
-                             "Please grant the permission"
-                 }
-                 Text(textToShow)
-                 Button(
-                     onClick = {
-                         //notificationPermissionState.launchPermissionRequest()
-                         println("onclicked***************************")
-                     }, shape = RoundedCornerShape(8.dp),
-                     colors = ButtonDefaults.buttonColors(
-                         containerColor = DarkGreen,
-                         contentColor = Color.White,
-                     )
-                 ) {
-                     Text(text = "Pick a Time")
-                 }
+     if (notificationPermissionState.status.isGranted) {
+         Text("Camera permission Granted")
+     } else {
+         Column {
+             val textToShow = if (notificationPermissionState.status.shouldShowRationale) {
+                 "The camera is important for this app. Please grant the permission."
+             } else {
+                 "Camera permission required for this feature to be available. " +
+                         "Please grant the permission"
              }
-         }*/
+             Text(textToShow)
+             Button(
+                 onClick = {
+                     //notificationPermissionState.launchPermissionRequest()
+                     println("onclicked***************************")
+                 }, shape = RoundedCornerShape(8.dp),
+                 colors = ButtonDefaults.buttonColors(
+                     containerColor = DarkGreen,
+                     contentColor = Color.White,
+                 )
+             ) {
+                 Text(text = "Pick a Time")
+             }
+         }
+     }*/
+}
+
+
+@Composable
+fun SearchResultEmpty(){
+    Column(
+        modifier = Modifier.padding(24.dp).fillMaxSize().background(Color.White),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Card(
+            modifier = Modifier.padding(3.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White,
+                contentColor = Color.Black
+            ),
+            border = BorderStroke(
+                width = 1.dp,
+                color = CustomGray
+            ),
+
+            ) {
+            Icon(
+                painterResource(id = R.drawable.vc_seach_empty_result),
+                "empty list icon",
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+            Text(
+                "No Search Result!",
+                modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                fontSize = 20.sp,
+                style = TextStyle.Default,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+            )
+        }
+        println("inside list is empty")
+
     }
 }
 
+
+
+
+
+
 @Composable
-fun FloatingActionButtons(navController: NavController) {
+fun ShowEmptyListMessage() {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .fillMaxHeight()
-            .fillMaxWidth()
-            .padding(14.dp),
-        verticalArrangement = Arrangement.Bottom,
-        horizontalAlignment = Alignment.End
+        modifier = Modifier.padding(24.dp).fillMaxSize().background(Color.White),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        FloatingActionButton(
-            onClick = {
-                //mContext.startActivity(Intent(mContext, DateTimePicker::class.java))
-                navController.navigate("add_task")
-            },
-            shape = CircleShape,
-            //backgroundColor = greenColor,
-            contentColor = Color.White
-        ) {
-            Icon(Icons.Filled.Add, "")
+        Card(
+            modifier = Modifier.padding(3.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White,
+                contentColor = Color.Black
+            ),
+            border = BorderStroke(
+                width = 1.dp,
+                color = CustomGray
+            ),
+
+            ) {
+            Icon(
+                painterResource(id = R.drawable.vc_empty_list),
+                "empty list icon",
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+            Text(
+                "Oops! No Tasks Found. Please try to add new one.",
+                modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                fontSize = 24.sp,
+                style = TextStyle.Default,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+            )
         }
+        println("inside list is empty")
+
     }
 }
 
@@ -175,43 +304,157 @@ fun FloatingActionButtons(navController: NavController) {
     ExperimentalFoundationApi::class
 )
 @Composable
-fun GenerateList(viewModel: ViewModel) {
-    LaunchedEffect(key1 = true) { // unit
-        println("launched effect triggered")
-        viewModel.fetchTasks()
-    }
-    val listItems = viewModel._taskList // remember gives MutableStateList
-
-    /*SideEffect {
-        println("Inside : Side Effect**********")
+fun GenerateList(
+    viewModel: ViewModel,
+    navController: NavController,
+    isListEmpty: Boolean?,
+    itemsList: List<Task>,
+    isSearchResultEmpty : Boolean?
+) {
+    /*LaunchedEffect(Unit) {
         viewModel.fetchTasks()
     }*/
-    val lazyListState = rememberLazyListState()
+    println("Generate List Triggered")
 
-    ///var list by remember { mutableStateListOf<Task>(emptyList())}//val list by remember{viewModel.taskList} // or directly use viewModel.taskList
-    //var tasks = remember { viewModel._taskList } .toMutableStateList
-    //var x = viewModel(TaskListViewModel::class.java)
-    //val tasks = viewModel._taskList.value.toMutableStateList()
-    //val tasks by remember { mutableStateListOf<Task>(emptyList())}
-    //val tasks1: List<Task>? by viewModel._taskList.value.toMutableStateList()
-    Column {
-        SearchBar(
-            hint = "Search...",
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(0.dp),
-        ) {
-            viewModel.searchList(it)
+    /* AnimatedVisibility(!isListEmpty) {
+         Column(modifier = Modifier.background(Color.Green)) {
+
+             SearchBar(
+                 hint = "Search...",
+                 modifier = Modifier
+                     .fillMaxWidth()
+                     .padding(0.dp),
+             ) {
+                 viewModel.searchList(it)
+             }
+             LazyColumn(
+                 //state = lazyListState,
+                 modifier = Modifier.fillMaxSize(),
+                 contentPadding = PaddingValues(4.dp),
+
+                 ) {
+
+
+                 itemsIndexed(items = itemsList,
+                     key = { index: Int, item: Task -> item.hashCode() },
+                     itemContent = { _, item ->
+                         *//*LaunchedEffect(key1 = Unit, block = {
+                        snapshotFlow { state.offset.value }
+                            .collect {
+                                willDismissDirection = when {
+                                    it > width * startActionsConfig.threshold -> DismissDirection.StartToEnd
+                                    it < -width * endActionsConfig.threshold -> DismissDirection.EndToStart
+                                    else -> null
+                                }
+                            }
+                    })*//*
+                        val currentItem by rememberUpdatedState(item)
+                        val dismissState = rememberDismissState(confirmStateChange = {
+                            if (it == DismissValue.DismissedToStart) {
+                                println("item removed****************")
+                                viewModel.deleteTask(currentItem)
+                                *//*viewModel._taskList.remove(currentItem)
+                            listItems.remove(currentItem)*//*
+                                //listItems.remove(currentItem)
+                                //itemList = itemList.filter { it != item }.toMutableList()
+                                //isListEmpty = listItems.value.isEmpty()
+                                true
+                            } else {
+                                //isListEmpty = listItems.value.isEmpty()
+                                false
+                            }
+                        })
+                        *//*LaunchedEffect(dismissState.currentValue) {
+                        if (dismissState.currentValue == DismissValue.DismissedToStart) {
+                            dismissState.snapTo(DismissValue.DismissedToStart)
+                        }
+                    }*//*
+
+                        SwipeToDismiss(
+                            state = dismissState,
+                            directions = setOf(EndToStart),
+                            modifier = Modifier.fillMaxWidth().animateItemPlacement(),
+                            background = {
+                                //val direction = dismissState.dismissDirection ?: return@SwipeToDismiss
+                                val color by animateColorAsState(
+                                    targetValue =
+                                    when (dismissState.targetValue) {
+                                        DismissValue.Default -> Color.LightGray
+                                        DismissValue.DismissedToStart -> CustomRed
+                                        else -> Color.Transparent
+                                    }
+                                )
+                                val scale by animateFloatAsState(targetValue = if (dismissState.targetValue == DismissValue.Default) 1f else 1.6f)
+                                *//*Box(
+                                contentAlignment = alignment,
+                                modifier = Modifier.fillParentMaxSize().background(color = color, shape = RoundedCornerShape(12.dp)).padding(4.dp),
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Icon",
+                                    modifier = Modifier.scale(scale = scale).padding(12.dp),
+                                    tint = Color.White,
+                                    )
+                            }*//*
+                                Row(
+                                    modifier = Modifier.fillParentMaxSize().padding(3.dp)
+                                        .background(
+                                            color = color,
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+                                        .padding(4.dp),
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically
+                                )
+                                {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Icon",
+                                        modifier = Modifier.scale(scale = scale).padding(12.dp),
+                                        tint = Color.White,
+                                    )
+                                }
+                            },
+
+                            dismissContent = {
+                                GenerateCard(item) {}
+                            }
+                        )
+
+                    }
+                )
+
+            }
         }
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier.fillMaxHeight(),
-            contentPadding = PaddingValues(4.dp),
-        ) {
-            itemsIndexed(items = listItems.value,
-                key = { index: Int, item: Task -> item.hashCode() },
-                itemContent = { _, item ->
-                    /*LaunchedEffect(key1 = Unit, block = {
+    }*/
+
+    Column(modifier = Modifier.background(Color.White)) {
+        Column {
+            AnimatedVisibility(isListEmpty != null && isListEmpty == false) {
+                SearchBar(
+                    hint = "Search...",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(0.dp),
+                ){
+                    viewModel.searchList(it)
+                }
+            }
+            AnimatedVisibility(isSearchResultEmpty != null  && isSearchResultEmpty == true){
+                SearchResultEmpty()
+            }
+        }
+
+        if(isListEmpty != null && isListEmpty == false) {
+            LazyColumn(
+                //state = lazyListState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(4.dp),
+            ) {
+                itemsIndexed(items = itemsList,
+                    key = { index: Int, item: Task -> item.hashCode() },
+                    itemContent = { _, item ->
+                        /*LaunchedEffect(key1 = Unit, block = {
                         snapshotFlow { state.offset.value }
                             .collect {
                                 willDismissDirection = when {
@@ -221,55 +464,44 @@ fun GenerateList(viewModel: ViewModel) {
                                 }
                             }
                     })*/
-                    val currentItem by rememberUpdatedState(item)
-                    val dismissState = rememberDismissState(confirmStateChange = {
-                        if (it == DismissValue.DismissedToStart) {
-                            println("item removed****************")
-                            viewModel.deleteTask(currentItem)
-                            /*viewModel._taskList.remove(currentItem)
+                        val currentItem by rememberUpdatedState(item)
+                        val dismissState = rememberDismissState(confirmStateChange = {
+                            if (it == DismissValue.DismissedToStart) {
+                                println("item removed****************")
+                                viewModel.deleteTask(currentItem)
+                                /*viewModel._taskList.remove(currentItem)
                             listItems.remove(currentItem)*/
-                            //viewModel._taskList.remove(currentItem)
-                            //listItems.remove(currentItem)
-                            viewModel.deleteTask(currentItem)
-                            listItems.value = listItems.value.filter { it != item }.toMutableList()
-                            true
-                        } else false
-                    })
-                    /*LaunchedEffect(dismissState.currentValue) {
+                                //listItems.remove(currentItem)
+                                //itemList = itemList.filter { it != item }.toMutableList()
+                                //isListEmpty = listItems.value.isEmpty()
+                                true
+                            } else {
+                                //isListEmpty = listItems.value.isEmpty()
+                                false
+                            }
+                        })
+                        /*LaunchedEffect(dismissState.currentValue) {
                         if (dismissState.currentValue == DismissValue.DismissedToStart) {
                             dismissState.snapTo(DismissValue.DismissedToStart)
                         }
                     }*/
-                    val state = rememberDismissState(
-                        confirmStateChange = {
-                            when (it) {
-                                DismissValue.DismissedToStart -> {
-                                    viewModel.deleteTask(currentItem)
-                                    true
-                                }
-                                else -> {
-                                    false
-                                }
-                            }
-                        }
-                    )
-                    SwipeToDismiss(
 
-                        state = dismissState,
-                        directions = setOf(EndToStart),
-                        modifier = Modifier.fillMaxWidth().animateItemPlacement(),
-                        background = {
-                            //val direction = dismissState.dismissDirection ?: return@SwipeToDismiss
-                            val color by animateColorAsState(
-                                targetValue =
-                                when (dismissState.targetValue) {
-                                    DismissValue.Default -> Color.LightGray
-                                    DismissValue.DismissedToStart -> CustomRed
-                                    else -> Color.Transparent
-                                }
-                            )
-                            val scale by animateFloatAsState(targetValue = if (dismissState.targetValue == DismissValue.Default) 1f else 1.6f)
-                            /*Box(
+                        SwipeToDismiss(
+                            state = dismissState,
+                            directions = setOf(EndToStart),
+                            modifier = Modifier.fillMaxWidth().animateItemPlacement(),
+                            background = {
+                                //val direction = dismissState.dismissDirection ?: return@SwipeToDismiss
+                                val color by animateColorAsState(
+                                    targetValue =
+                                    when (dismissState.targetValue) {
+                                        DismissValue.Default -> Color.LightGray
+                                        DismissValue.DismissedToStart -> CustomRed
+                                        else -> Color.Transparent
+                                    }
+                                )
+                                val scale by animateFloatAsState(targetValue = if (dismissState.targetValue == DismissValue.Default) 1f else 1.6f)
+                                /*Box(
                                 contentAlignment = alignment,
                                 modifier = Modifier.fillParentMaxSize().background(color = color, shape = RoundedCornerShape(12.dp)).padding(4.dp),
                             ) {
@@ -280,31 +512,58 @@ fun GenerateList(viewModel: ViewModel) {
                                     tint = Color.White,
                                     )
                             }*/
-                            Row(
-                                modifier = Modifier.fillParentMaxSize().padding(3.dp)
-                                    .background(color = color, shape = RoundedCornerShape(12.dp))
-                                    .padding(4.dp),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically
-                            )
-                            {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Icon",
-                                    modifier = Modifier.scale(scale = scale).padding(12.dp),
-                                    tint = Color.White,
+                                Row(
+                                    modifier = Modifier.fillParentMaxSize().padding(3.dp)
+                                        .background(
+                                            color = color,
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+                                        .padding(4.dp),
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically
                                 )
-                            }
-                        },
+                                {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Icon",
+                                        modifier = Modifier.scale(scale = scale).padding(12.dp),
+                                        tint = Color.White,
+                                    )
+                                }
+                            },
 
-                        dismissContent = {
-                            GenerateCard(item) {}
-                        }
-                    )
-                }
-            )
+                            dismissContent = {
+                                GenerateCard(item) {}
+                            }
+                        )
+
+                    }
+                )
+            }
         }
+        AnimatedVisibility(isListEmpty != null && isListEmpty == true) {
+            ShowEmptyListMessage()
+        }
+
     }
+
+
+
+    FloatingActionButtons(navController = navController)
+    //val listItems = viewModel._taskList // remember gives MutableStateList
+    /*SideEffect {
+        println("Inside : Side Effect**********")
+        viewModel.fetchTasks()
+    }*/
+    val lazyListState = rememberLazyListState()
+    ///var list by remember { mutableStateListOf<Task>(emptyList())}//val list by remember{viewModel.taskList} // or directly use viewModel.taskList
+    //var tasks = remember { viewModel._taskList } .toMutableStateList
+    //var x = viewModel(TaskListViewModel::class.java)
+    //val tasks = viewModel._taskList.value.toMutableStateList()
+    //val tasks by remember { mutableStateListOf<Task>(emptyList())}
+    //val tasks1: List<Task>? by viewModel._taskList.value.toMutableStateList()
+
+
 }
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -451,6 +710,7 @@ fun createChannel(channelId: String, context: Context, task: Task) {
         calendar.clear()*/
         calendar.set(year, month - 1, day, hours, min)
         if (calendar.timeInMillis >= System.currentTimeMillis()) {
+            // Create the notification
             val notification = NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.drawable.vc_done)
                 .setContentTitle(task.title)
@@ -484,6 +744,31 @@ fun createChannel(channelId: String, context: Context, task: Task) {
     }
 }
 
+@Composable
+fun FloatingActionButtons(navController: NavController) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .fillMaxHeight()
+            .fillMaxWidth()
+            .padding(14.dp),
+        verticalArrangement = Arrangement.Bottom,
+        horizontalAlignment = Alignment.End
+    ) {
+        FloatingActionButton(
+            onClick = {
+                //mContext.startActivity(Intent(mContext, DateTimePicker::class.java))
+                navController.navigate("add_task")
+            },
+            shape = CircleShape,
+            //backgroundColor = greenColor,
+            contentColor = Color.White
+        ) {
+            Icon(Icons.Filled.Add, "")
+        }
+    }
+}
+
 private fun createNotification(context: Context): Notification {
     return TODO()
 }
@@ -508,10 +793,10 @@ fun RequestPermission(
             )
         },
         content = {
-            Content(
-                text = "PERMISSION GRANTED!",
-                showButton = false
-            ) {}
+            /*  Content(
+                  text = "PERMISSION GRANTED!",
+                  showButton = false
+              ) {}*/
         }
     )
 }
@@ -595,5 +880,7 @@ fun PermissionDeniedContent(
     } else {
         Content(text = deniedMessage, onClick = onRequestPermission)
     }
-
 }
+
+
+

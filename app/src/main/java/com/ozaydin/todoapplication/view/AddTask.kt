@@ -47,6 +47,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
+
     val context = LocalContext.current
     var selectedDate = ""
     var selectedTime = ""
@@ -130,7 +131,7 @@ fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
                     Button(
                         onClick = {
                             calendarState.show()
-                        }, modifier = Modifier.padding(12.dp, 0.dp),
+                        }, modifier = Modifier.padding(12.dp, 8.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = DarkGreen,
@@ -143,13 +144,15 @@ fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
                             tint = Color.White,
                             modifier = Modifier.padding(0.dp, 0.dp, 16.dp, 0.dp)
                         )
-                        Text(text = "Pick a Date")
+                        Text(text = "Due Date")
                     }
                     Spacer(modifier = Modifier.height(20.dp))
                     Button(
                         onClick = {
                             clockState.show()
-                        }, shape = RoundedCornerShape(8.dp),
+                        },
+                        modifier = Modifier.padding(12.dp, 8.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = DarkGreen,
                             contentColor = Color.White,
@@ -161,7 +164,7 @@ fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
                             tint = Color.White,
                             modifier = Modifier.padding(0.dp, 0.dp, 16.dp, 0.dp)
                         )
-                        Text(text = "Pick a Time")
+                        Text(text = "Due Time")
                     }
                 }
 

@@ -5,15 +5,15 @@
 ##  Dependencies :high_brightness:
 
 
-| :key: Name      | :book: Description | :link: Link    |
-| :---        |    :----   |          :--- |
-| `Jetpack`      |_Jetpack is a suite of libraries to help developers follow best practices._ <br/> > `Compose` : _Android's recommended modern toolkit for building native UI. Alternative to XML._ <br/> > `Swipe To Dismiss` _: Necessary to delete items in LazyColumn_<br/> > `Navigation` _: Essential tool for switching between different screens_| [link](https://developer.android.com/jetpack/compose/tutorial)   |
-| `RxJava`       |    _A library for composing asynchronous and event-based programs using observable sequences for the Java VM._|[link](https://github.com/ReactiveX/RxJava) |
-| `Coroutines`|   _A coroutine is a concurrency design pattern that you can use on Android to simplify code that executes asynchronously._|[link](https://developer.android.com/kotlin/coroutines#:~:text=A%20coroutine%20is%20a%20concurrency,established%20concepts%20from%20other%20languages.) |
-| `Room`   |_The Room persistence library provides an abstraction layer over SQLite to allow fluent database access while harnessing the full power of SQLite._|[link](https://developer.android.com/training/data-storage/room)|
-| `MVVM`  |_Model, View, ViewModel.<br/> > `Model`: This holds the data of the application. It cannot directly talk to the View.<br/> > `View`: It represents the UI of the application <br/> > `ViewModel`: It acts as a link between the Model and the View._|[link](https://www.digitalocean.com/community/tutorials/android-mvvm-design-pattern) |
-| `Dagger-Hilt` |_Hilt is a dependency injection library for Android._|[link](https://developer.android.com/training/dependency-injection/hilt-android)|
-
+| :key: Name      | :book: Description                                                                                                                                                                                                                                                                                                                       | :link: Link    |
+|:----------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|          :--- |
+| `Jetpack`       | _Jetpack is a suite of libraries to help developers follow best practices._ <br/> > `Compose` : _Android's recommended modern toolkit for building native UI. Alternative to XML._ <br/> > `Swipe To Dismiss` _: Necessary to delete items in LazyColumn_<br/> > `Navigation` _: Essential tool for switching between different screens_ | [link](https://developer.android.com/jetpack/compose/tutorial)   |
+| `RxJava`        | _A library for composing asynchronous and event-based programs using observable sequences for the Java VM._                                                                                                                                                                                                                              |[link](https://github.com/ReactiveX/RxJava) |
+| `Coroutines`    | _A coroutine is a concurrency design pattern that you can use on Android to simplify code that executes asynchronously._                                                                                                                                                                                                                 |[link](https://developer.android.com/kotlin/coroutines#:~:text=A%20coroutine%20is%20a%20concurrency,established%20concepts%20from%20other%20languages.) |
+| `Room`          | _The Room persistence library provides an abstraction layer over SQLite to allow fluent database access while harnessing the full power of SQLite._                                                                                                                                                                                      |[link](https://developer.android.com/training/data-storage/room)|
+| `MVVM`          | _Model, View, ViewModel.<br/> > `Model`: This holds the data of the application. It cannot directly talk to the View.<br/> > `View`: It represents the UI of the application <br/> > `ViewModel`: It acts as a link between the Model and the View._                                                                                     |[link](https://www.digitalocean.com/community/tutorials/android-mvvm-design-pattern) |
+| `Dagger-Hilt`   | _Hilt is a dependency injection library for Android._                                                                                                                                                                                                                                                                                    |[link](https://developer.android.com/training/dependency-injection/hilt-android)|
+| `Notifications` | _Alarm Manager, Grant notification permissions_                                                                                                                                                                                                                                                                                          |[link](https://developer.android.com/develop/ui/views/notifications/build-notification)|
 
 #  _ScreenShots_  :camera:
 
@@ -35,6 +35,4 @@ Don't forget to star the project if you like it!  :heart: ==  :star:
 
 
 ###   _In Progress_ :boom:
-- [ ] Notifications with Work Manager.
 - [ ] Update Tasks.
-- [ ] Entegration of Date-Time functionality.
