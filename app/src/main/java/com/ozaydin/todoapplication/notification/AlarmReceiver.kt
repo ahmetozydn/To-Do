@@ -11,7 +11,12 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
+import com.ozaydin.todoapplication.data.Task
+import com.ozaydin.todoapplication.utils.Util
 import com.ozaydin.todoapplication.utils.Util.Companion.NOTIFICATION
+import com.ozaydin.todoapplication.utils.Util.Companion.NOTIFICATION_LIST
+import com.ozaydin.todoapplication.utils.createChannel
+import com.ozaydin.todoapplication.utils.createNotification
 
 
 /*
@@ -23,11 +28,24 @@ class AlarmReceiver : BroadcastReceiver() {
 
 
     override fun onReceive(context: Context, intent: Intent) {
-
+        println("incide alarm receiver")
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // API 33
             intent.getParcelableExtra(NOTIFICATION, Notification::class.java)
         } else {
             intent.getParcelableExtra<Notification>(NOTIFICATION)
+        }
+        val notificationList = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // API 33
+            intent.getParcelableArrayListExtra<Task>(NOTIFICATION_LIST, Task::class.java) // need to get list of class
+        } else {
+            intent.getParcelableArrayListExtra<Task>(NOTIFICATION_LIST)
+        }
+        if(notificationList?.isNotEmpty() == true){
+            notificationList.forEach{
+                if(it.date != null && it.time != null){
+                    val notification =  createNotification(it,context)
+                    createChannel(Util.CHANNEL_ID,context,it)
+                }
+            }
         }
         println("Inside Alarm Receiver")
         println("$notification **********************************************")

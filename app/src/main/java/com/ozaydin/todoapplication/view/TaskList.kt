@@ -7,6 +7,7 @@ import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -24,7 +25,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -46,6 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -64,6 +68,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -75,6 +80,7 @@ import com.ozaydin.todoapplication.theme.*
 import com.ozaydin.todoapplication.utils.Util.Companion.NOTIFICATION
 import com.ozaydin.todoapplication.viewmodel.ViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -87,6 +93,30 @@ class TaskList : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContent {
+
+            ToDoApplicationTheme {
+                val navController = rememberNavController()
+                NavHost(
+                    navController = navController,
+                    startDestination = "splash_screen"
+                ) {
+                    composable("splash_screen"){
+                        AnimatedSplashScreen(navController) {
+                            navController.navigate("task_list")
+                        }
+                        //AnimatedSplashScreen(navController)
+                    }
+                    composable("task_list") {
+                        TaskListScreen(navController = navController, taskListViewModel)
+                    }
+                    composable("add_task") { backStackEntry ->
+                        //val itemId = backStackEntry.arguments?.getString("itemId")
+                        AddTaskScreen(navController = navController, taskListViewModel)
+                    }
+                }
+            }
+        }
         permissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { result ->
                 if (result) {
@@ -104,23 +134,7 @@ class TaskList : ComponentActivity() {
                 }
 
             }
-        setContent {
-            ToDoApplicationTheme {
-                val navController = rememberNavController()
-                NavHost(
-                    navController = navController,
-                    startDestination = "task_list"
-                ) {
-                    composable("task_list") {
-                        TaskListScreen(navController = navController, taskListViewModel)
-                    }
-                    composable("add_task") { backStackEntry ->
-                        //val itemId = backStackEntry.arguments?.getString("itemId")
-                        AddTaskScreen(navController = navController, taskListViewModel)
-                    }
-                }
-            }
-        }
+
     }
 /*    private fun onStatusChanged() {
         if (ActivityCompat.checkSelfPermission(
@@ -240,14 +254,14 @@ fun SearchResultEmpty(){
             Icon(
                 painterResource(id = R.drawable.vc_seach_empty_result),
                 "empty list icon",
-                modifier = Modifier.align(Alignment.CenterHorizontally),
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(24.dp,12.dp),
             )
             Text(
                 "No Search Result!",
                 modifier = Modifier.padding(14.dp).fillMaxWidth(),
                 fontSize = 20.sp,
                 style = TextStyle.Default,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Center,
             )
         }
@@ -283,14 +297,14 @@ fun ShowEmptyListMessage() {
             Icon(
                 painterResource(id = R.drawable.vc_empty_list),
                 "empty list icon",
-                modifier = Modifier.align(Alignment.CenterHorizontally),
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(24.dp),
             )
             Text(
                 "Oops! No Tasks Found. Please try to add new one.",
                 modifier = Modifier.padding(14.dp).fillMaxWidth(),
                 fontSize = 24.sp,
                 style = TextStyle.Default,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Center,
             )
         }
@@ -696,53 +710,6 @@ fun SearchBar(
 }
 
 
-@SuppressLint("UnspecifiedImmutableFlag")
-fun createChannel(channelId: String, context: Context, task: Task) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { // API 26
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
-        val (hours, min) = task.time!!.split(":").map { it.toInt() }
-        val (year, month, day) = task.date!!.split("-")
-            .map { it.toInt() } // if the date is saved as null, app always crushes
-        val calendar = Calendar.getInstance()
-        //calendar.set(Calendar.AM_PM, Calendar.AM);
-
-        /*calendar.timeInMillis = System.currentTimeMillis()
-        calendar.clear()*/
-        calendar.set(year, month - 1, day, hours, min)
-        if (calendar.timeInMillis >= System.currentTimeMillis()) {
-            // Create the notification
-            val notification = NotificationCompat.Builder(context, channelId)
-                .setSmallIcon(R.drawable.vc_done)
-                .setContentTitle(task.title)
-                .setContentText(task.description)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                //.setAutoCancel(true)
-                .setVisibility(VISIBILITY_PUBLIC).build()
-            println("the value of calendar is :  ${calendar.time}")
-            // Create an intent to launch the notification
-            val intent = Intent(context, AlarmReceiver::class.java)
-            intent.putExtra(NOTIFICATION, notification)
-
-            val pendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // API 31
-                PendingIntent.getBroadcast(
-                    context,
-                    (0..100000).random(),
-                    intent,
-                    PendingIntent.FLAG_MUTABLE
-                )
-            } else {
-                PendingIntent.getBroadcast(
-                    context, (0..100000).random(), intent, PendingIntent.FLAG_UPDATE_CURRENT
-                )
-            }
-            alarmManager?.setExact(
-                AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
-                pendingIntent
-            ) //was setExact
-        }
-    }
-}
 
 @Composable
 fun FloatingActionButtons(navController: NavController) {
@@ -880,6 +847,56 @@ fun PermissionDeniedContent(
     } else {
         Content(text = deniedMessage, onClick = onRequestPermission)
     }
+}
+
+@Composable
+fun AnimatedSplashScreen(navController: NavHostController,onSplashFinished: () -> Unit) {
+    var startAnimation by remember { mutableStateOf(false) }
+    val alphaAnim = animateFloatAsState(
+        targetValue = if (startAnimation) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 3000
+        )
+    )
+
+    LaunchedEffect(key1 = true) {
+        startAnimation = true
+        delay(3000)
+        navController.popBackStack()
+        navController.navigate("task_list")
+    }
+    Splash(alpha = alphaAnim.value)
+}
+
+@Composable
+fun Splash(alpha: Float) {
+    Box(
+        modifier = Modifier
+            .background(Color.Black) //isSystemInDarkTheme()
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            modifier = Modifier
+                .size(140.dp)
+                .alpha(alpha = alpha),
+            painter = painterResource(id = R.drawable.vc_done),
+            contentDescription = "Logo Icon",
+            tint = Color.Red
+        )
+    }
+}
+
+@Composable
+@Preview
+fun SplashScreenPreview() {
+    Splash(alpha = 1f)
+}
+
+@Composable
+@Preview(uiMode = UI_MODE_NIGHT_YES)
+fun SplashScreenDarkPreview() {
+    Splash(alpha = 1f)
 }
 
 

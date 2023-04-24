@@ -37,8 +37,10 @@ import com.ozaydin.todoapplication.R
 import com.ozaydin.todoapplication.data.Task
 import com.ozaydin.todoapplication.theme.CustomGray
 import com.ozaydin.todoapplication.theme.DarkGreen
+import com.ozaydin.todoapplication.utils.Util
 import com.ozaydin.todoapplication.utils.Util.Companion.CHANNEL_ID
 import com.ozaydin.todoapplication.utils.Util.Companion.CHANNEL_NAME
+import com.ozaydin.todoapplication.utils.createChannel
 import com.ozaydin.todoapplication.viewmodel.ViewModel
 import java.util.*
 
