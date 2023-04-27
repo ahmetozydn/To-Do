@@ -10,8 +10,8 @@ import android.os.Build
 import com.ozaydin.todoapplication.data.Task
 import com.ozaydin.todoapplication.repository.TaskRepository
 import com.ozaydin.todoapplication.utils.Util
-import com.ozaydin.todoapplication.utils.Util.Companion.CHANNEL_ID
 import com.ozaydin.todoapplication.utils.createChannel
+import com.ozaydin.todoapplication.utils.getUniqueId
 import dagger.hilt.android.scopes.ActivityScoped
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -64,25 +64,24 @@ class BootReceiver @Inject constructor(private val taskRepository: TaskRepositor
             }
             // Recreate your alarms here
             alarmList.forEach {
-                if(it.date != null && it.time != null){
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {  // API 26
-                        val channelId = CHANNEL_ID
-                        val channelName = Util.CHANNEL_NAME
-                        val importance = NotificationManager.IMPORTANCE_DEFAULT
-                        val channel = NotificationChannel(channelId, channelName, importance)
-                        val notificationManager =
-                            context.getSystemService(NotificationManager::class.java)
-                        notificationManager.createNotificationChannel(channel)
-                        /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // min API level is 31
-                        }*/
-                        createChannel(CHANNEL_ID,context,it)
-                    }
-                    //val notification =  createNotification(it,context)
+                //val notification =  createNotification(it,context)
+                if (it.date != null && it.time != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {  // API 26
+                    val channelId = getUniqueId()
+                    val channelName = Util.CHANNEL_NAME
+                    val importance = NotificationManager.IMPORTANCE_DEFAULT
+                    val channel =
+                        NotificationChannel(channelId.toString(), channelName, importance)
+                    val notificationManager =
+                        context.getSystemService(NotificationManager::class.java)
+                    notificationManager.createNotificationChannel(channel)
+                    /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // min API level is 31
+                                       }*/
+                    createChannel(channelId.toString(), context, it)
                 }
             }
-           /* val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val intent = Intent(context, AlarmReceiver::class.java)
-            intent.putParcelableArrayListExtra(Util.NOTIFICATION_LIST,alarmList)*/
+            /* val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+             val intent = Intent(context, AlarmReceiver::class.java)
+             intent.putParcelableArrayListExtra(Util.NOTIFICATION_LIST,alarmList)*/
 
 
             /*val pendingIntent =

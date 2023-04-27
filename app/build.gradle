@@ -104,7 +104,8 @@ dependencies {
 
     //permission lib. must match with compose version
     implementation "com.google.accompanist:accompanist-permissions:0.25.1"
-
+    //status bar color
+    implementation "com.google.accompanist:accompanist-systemuicontroller:0.20.0"
 
 }
 

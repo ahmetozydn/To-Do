@@ -1,19 +1,12 @@
 package com.ozaydin.todoapplication.view
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.*
-import android.content.ContentValues.TAG
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
-import android.transition.Visibility
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,12 +17,15 @@ import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.InteractionSource
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -53,33 +49,34 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.*
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.ozaydin.todoapplication.notification.AlarmReceiver
 import com.ozaydin.todoapplication.R
 import com.ozaydin.todoapplication.data.Task
 import com.ozaydin.todoapplication.theme.*
 import com.ozaydin.todoapplication.utils.Util.Companion.NOTIFICATION
+import com.ozaydin.todoapplication.utils.cancelAlarm
 import com.ozaydin.todoapplication.viewmodel.ViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
@@ -93,21 +90,22 @@ class TaskList : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
 
+        setContent {
             ToDoApplicationTheme {
                 val navController = rememberNavController()
                 NavHost(
                     navController = navController,
                     startDestination = "splash_screen"
                 ) {
-                    composable("splash_screen"){
+                    composable("splash_screen") {
                         AnimatedSplashScreen(navController) {
                             navController.navigate("task_list")
                         }
                         //AnimatedSplashScreen(navController)
                     }
                     composable("task_list") {
+                        //Demo()
                         TaskListScreen(navController = navController, taskListViewModel)
                     }
                     composable("add_task") { backStackEntry ->
@@ -136,6 +134,7 @@ class TaskList : ComponentActivity() {
             }
 
     }
+
 /*    private fun onStatusChanged() {
         if (ActivityCompat.checkSelfPermission(
                 this,
@@ -163,17 +162,71 @@ class TaskList : ComponentActivity() {
     }*/
 }
 
+@OptIn(
+    ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class,
+    ExperimentalFoundationApi::class
+)
+
+data class CardItem(
+    val word: String,
+    val key: Int,
+    var isDeleting: Boolean = false
+)
+
+@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
+@Composable
+fun Demo() {
+    val cardItems = remember { mutableStateListOf<CardItem>() }
+
+    // Adding items to the list
+    cardItems.add(CardItem("Item 1", 0, false))
+    cardItems.add(CardItem("Item 2", 1, false))
+    cardItems.add(CardItem("Item 3", 2, false))
+    cardItems.add(CardItem("item 4", 3, false))
+    cardItems.add(CardItem("item 5", 4, false))
+    cardItems.add(CardItem("item 6", 5, false))
+    cardItems.add(CardItem("item 7", 6, false))
+    cardItems.add(CardItem("item 8", 7, false))
+    cardItems.add(CardItem("item 9", 8, false))
+    cardItems.add(CardItem("item 10", 9, false))
+    cardItems.add(CardItem("item 11", 10, false))
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
+        LazyColumn {
+            items(cardItems) { cardItem ->
+
+            }
+        }
+
+    }
+
+}
+
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun TaskListScreen(navController: NavController, viewModel: ViewModel) {
-    LaunchedEffect(key1 = true){
+    val systemUiController = rememberSystemUiController()
+    // Set the status bar color
+    systemUiController.setStatusBarColor(
+        color = Color.White,
+        darkIcons = true // Set true if your status bar icons should be dark, false if light
+    )
+    LaunchedEffect(key1 = true) {
         viewModel.fetchTasks()
     }
     var isSearchResultEmpty by remember { viewModel.isSeachListEmpty }
     val isListEmpty by remember { viewModel.isListEmpty }
     val itemsList by viewModel._taskList
 
-    GenerateList(viewModel, navController, isListEmpty, itemsList,isSearchResultEmpty)
+    GenerateList(viewModel, navController, isListEmpty, itemsList, isSearchResultEmpty)
+
+    var stringList = remember { mutableStateListOf<String>() }
+
+    // Adding items to the list
+    stringList.add("Item 1")
+    stringList.add("Item 2")
+    stringList.add("Item 3")
+    stringList.add("item 4")
 
     /* Box(contentAlignment = Alignment.Center,
          modifier = Modifier.fillMaxSize()){
@@ -233,7 +286,7 @@ fun TaskListScreen(navController: NavController, viewModel: ViewModel) {
 
 
 @Composable
-fun SearchResultEmpty(){
+fun SearchResultEmpty() {
     Column(
         modifier = Modifier.padding(24.dp).fillMaxSize().background(Color.White),
         verticalArrangement = Arrangement.Center,
@@ -254,7 +307,7 @@ fun SearchResultEmpty(){
             Icon(
                 painterResource(id = R.drawable.vc_seach_empty_result),
                 "empty list icon",
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(24.dp,12.dp),
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(24.dp, 12.dp),
             )
             Text(
                 "No Search Result!",
@@ -269,10 +322,6 @@ fun SearchResultEmpty(){
 
     }
 }
-
-
-
-
 
 
 @Composable
@@ -323,124 +372,14 @@ fun GenerateList(
     navController: NavController,
     isListEmpty: Boolean?,
     itemsList: List<Task>,
-    isSearchResultEmpty : Boolean?
+    isSearchResultEmpty: Boolean?
 ) {
+    val context = LocalContext.current
     /*LaunchedEffect(Unit) {
         viewModel.fetchTasks()
     }*/
     println("Generate List Triggered")
 
-    /* AnimatedVisibility(!isListEmpty) {
-         Column(modifier = Modifier.background(Color.Green)) {
-
-             SearchBar(
-                 hint = "Search...",
-                 modifier = Modifier
-                     .fillMaxWidth()
-                     .padding(0.dp),
-             ) {
-                 viewModel.searchList(it)
-             }
-             LazyColumn(
-                 //state = lazyListState,
-                 modifier = Modifier.fillMaxSize(),
-                 contentPadding = PaddingValues(4.dp),
-
-                 ) {
-
-
-                 itemsIndexed(items = itemsList,
-                     key = { index: Int, item: Task -> item.hashCode() },
-                     itemContent = { _, item ->
-                         *//*LaunchedEffect(key1 = Unit, block = {
-                        snapshotFlow { state.offset.value }
-                            .collect {
-                                willDismissDirection = when {
-                                    it > width * startActionsConfig.threshold -> DismissDirection.StartToEnd
-                                    it < -width * endActionsConfig.threshold -> DismissDirection.EndToStart
-                                    else -> null
-                                }
-                            }
-                    })*//*
-                        val currentItem by rememberUpdatedState(item)
-                        val dismissState = rememberDismissState(confirmStateChange = {
-                            if (it == DismissValue.DismissedToStart) {
-                                println("item removed****************")
-                                viewModel.deleteTask(currentItem)
-                                *//*viewModel._taskList.remove(currentItem)
-                            listItems.remove(currentItem)*//*
-                                //listItems.remove(currentItem)
-                                //itemList = itemList.filter { it != item }.toMutableList()
-                                //isListEmpty = listItems.value.isEmpty()
-                                true
-                            } else {
-                                //isListEmpty = listItems.value.isEmpty()
-                                false
-                            }
-                        })
-                        *//*LaunchedEffect(dismissState.currentValue) {
-                        if (dismissState.currentValue == DismissValue.DismissedToStart) {
-                            dismissState.snapTo(DismissValue.DismissedToStart)
-                        }
-                    }*//*
-
-                        SwipeToDismiss(
-                            state = dismissState,
-                            directions = setOf(EndToStart),
-                            modifier = Modifier.fillMaxWidth().animateItemPlacement(),
-                            background = {
-                                //val direction = dismissState.dismissDirection ?: return@SwipeToDismiss
-                                val color by animateColorAsState(
-                                    targetValue =
-                                    when (dismissState.targetValue) {
-                                        DismissValue.Default -> Color.LightGray
-                                        DismissValue.DismissedToStart -> CustomRed
-                                        else -> Color.Transparent
-                                    }
-                                )
-                                val scale by animateFloatAsState(targetValue = if (dismissState.targetValue == DismissValue.Default) 1f else 1.6f)
-                                *//*Box(
-                                contentAlignment = alignment,
-                                modifier = Modifier.fillParentMaxSize().background(color = color, shape = RoundedCornerShape(12.dp)).padding(4.dp),
-                            ) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Icon",
-                                    modifier = Modifier.scale(scale = scale).padding(12.dp),
-                                    tint = Color.White,
-                                    )
-                            }*//*
-                                Row(
-                                    modifier = Modifier.fillParentMaxSize().padding(3.dp)
-                                        .background(
-                                            color = color,
-                                            shape = RoundedCornerShape(12.dp)
-                                        )
-                                        .padding(4.dp),
-                                    horizontalArrangement = Arrangement.End,
-                                    verticalAlignment = Alignment.CenterVertically
-                                )
-                                {
-                                    Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = "Icon",
-                                        modifier = Modifier.scale(scale = scale).padding(12.dp),
-                                        tint = Color.White,
-                                    )
-                                }
-                            },
-
-                            dismissContent = {
-                                GenerateCard(item) {}
-                            }
-                        )
-
-                    }
-                )
-
-            }
-        }
-    }*/
 
     Column(modifier = Modifier.background(Color.White)) {
         Column {
@@ -450,16 +389,16 @@ fun GenerateList(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(0.dp),
-                ){
+                ) {
                     viewModel.searchList(it)
                 }
             }
-            AnimatedVisibility(isSearchResultEmpty != null  && isSearchResultEmpty == true){
+            AnimatedVisibility(isSearchResultEmpty != null && isSearchResultEmpty == true) {
                 SearchResultEmpty()
             }
         }
 
-        if(isListEmpty != null && isListEmpty == false) {
+        if (isListEmpty != null && isListEmpty == false) {
             LazyColumn(
                 //state = lazyListState,
                 modifier = Modifier.fillMaxSize(),
@@ -482,6 +421,7 @@ fun GenerateList(
                         val dismissState = rememberDismissState(confirmStateChange = {
                             if (it == DismissValue.DismissedToStart) {
                                 println("item removed****************")
+                                cancelAlarm(context = context, currentItem.alarmId)
                                 viewModel.deleteTask(currentItem)
                                 /*viewModel._taskList.remove(currentItem)
                             listItems.remove(currentItem)*/
@@ -503,7 +443,12 @@ fun GenerateList(
                         SwipeToDismiss(
                             state = dismissState,
                             directions = setOf(EndToStart),
-                            modifier = Modifier.fillMaxWidth().animateItemPlacement(),
+                            modifier = Modifier.fillMaxWidth().animateItemPlacement(
+                                animationSpec = tween(
+                                    durationMillis = 700,
+                                    easing = LinearOutSlowInEasing,
+                                )
+                            ),
                             background = {
                                 //val direction = dismissState.dismissDirection ?: return@SwipeToDismiss
                                 val color by animateColorAsState(
@@ -538,9 +483,10 @@ fun GenerateList(
                                 )
                                 {
                                     Icon(
-                                        Icons.Default.Delete,
                                         contentDescription = "Icon",
-                                        modifier = Modifier.scale(scale = scale).padding(12.dp),
+                                        modifier = Modifier.scale(scale = scale)
+                                            .padding(0.dp, 0.dp, 12.dp, 0.dp),
+                                        painter = painterResource(id = R.drawable.vc_done),
                                         tint = Color.White,
                                     )
                                 }
@@ -580,40 +526,81 @@ fun GenerateList(
 
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun GenerateCard(task: Task, onRemove: (Task) -> Unit) {
-    val (year, month, day) = task.date!!.split("-").map {
-        it.toInt()
-    }
+    var year = ""
+    var month = ""
+    var day = ""
+    var abbreviatedMonth = ""
+    var hours = ""
+    var min = ""
     val calendar = Calendar.getInstance()
-    calendar.set(Calendar.MONTH, month - 1)
-    val abbreviatedMonth = SimpleDateFormat("LLL", Locale.getDefault()).format(calendar.time)
-    println("abbbbbbbbbbbbbbbbbbbbbbbbriviared time is :  $abbreviatedMonth")
-    calendar.set(Calendar.MONTH, month)
-    println("the calendar is +++++++++++++++01           :   $calendar")
+    if (!task.date.isNullOrBlank() && !task.time.isNullOrBlank()) {
+        val dateList = task.date.split("-").map {// (year, month, day)
+            it.toInt()
+        }
+        year = dateList[0].toString() // TODO consider to give a better solution
+        month = dateList[1].toString()
+        day = dateList[2].toString()
+        calendar.set(Calendar.MONTH, month.toInt() - 1)
+        abbreviatedMonth = SimpleDateFormat("LLL", Locale.getDefault()).format(calendar.time)
+        println("abbbbbbbbbbbbbbbbbbbbbbbbriviared time is :  $abbreviatedMonth")
+        calendar.set(Calendar.MONTH, month.toInt())
+        println("the calendar is +++++++++++++++01           :   $calendar")
+        val timeList = task.time.split(":").map {// (year, month, day)
+            it.toInt()
+        }
+        if (timeList.isNotEmpty()) {
+            hours = timeList[0].toString()
+            min = timeList[1].toString()
+            calendar.set(year.toInt(), month.toInt() - 1, day.toInt(), hours.toInt(), min.toInt())
+        }
+
+    }
+
     Card(
-        modifier = Modifier.fillMaxSize().padding(3.dp)
-            .shadow(1.dp, shape = RoundedCornerShape(8.dp)),
+        modifier = Modifier.fillMaxSize().height(80.dp).padding(3.dp) //3.dp
+            .shadow(4.dp, shape = RoundedCornerShape(3.dp)), // 8dp
         colors = CardDefaults.cardColors(
             containerColor = Color.White,
             contentColor = Color.White
         ),
         border = BorderStroke(
-            width = 1.dp,
+            width = 0.dp,
             color = CustomGray
         ),
 
         ) {
-        if (task.title != null) {
-            Text(
-                modifier = Modifier.padding(12.dp, 4.dp, 2.dp, 2.dp),
-                text = task.title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.Black,
-                maxLines = 1
-            )
+        Row(modifier = Modifier.fillMaxSize().padding(0.dp)) {
+
+            Box(modifier = Modifier.height(80.dp).width(8.dp).padding(0.dp)) {
+                Button(
+                    modifier = Modifier.width(8.dp).height(80.dp).padding(0.dp),
+                    onClick = { },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (!task.date.isNullOrBlank()) {
+                            if (calendar.timeInMillis > System.currentTimeMillis()) DarkGreen else Color.Red
+                        } else {
+                            Color.Transparent
+                        },
+                        contentColor = if (calendar.timeInMillis > System.currentTimeMillis()) DarkGreen else Color.Red,
+                    ),
+                    shape = RoundedCornerShape(8.dp, 0.dp, 0.dp, 8.dp),
+                ) {
+
+                }
+            }
+
+
             Column {
+                Text(
+                    modifier = Modifier.padding(12.dp, 4.dp, 2.dp, 2.dp),
+                    text = task.title!!,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Black,
+                    maxLines = 1
+                )
                 Text(
                     modifier = Modifier.padding(12.dp, 4.dp, 2.dp, 2.dp),
                     text = task.description!!,
@@ -626,20 +613,28 @@ fun GenerateCard(task: Task, onRemove: (Task) -> Unit) {
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if(task.date != ""){
+                        Icon(
+                            modifier = Modifier.size(24.dp),
+                            painter = painterResource(id = R.drawable.vc_alarm),
+                            contentDescription = "alarm icon",
+                            tint = Color.Black
+                        )
+                    }
                     task.time?.let {
                         Text(
-                            modifier = Modifier.padding(12.dp, 0.dp, 2.dp, 0.dp),
+                            modifier = Modifier.padding(6.dp, 0.dp, 2.dp, 0.dp).align(Alignment.CenterVertically),
                             textAlign = TextAlign.End,
-                            text = "$it $abbreviatedMonth $day, $year",
+                            text = if (day != "") "$it | $abbreviatedMonth $day, $year" else "",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = CustomGreen,
+                            color =
+                            if (calendar.timeInMillis >= System.currentTimeMillis()) DarkGreen else Color.Red,
                             maxLines = 1,
                         )
                     }
                 }
             }
         }
-
 
     }
 }
@@ -710,7 +705,6 @@ fun SearchBar(
 }
 
 
-
 @Composable
 fun FloatingActionButtons(navController: NavController) {
     Column(
@@ -731,7 +725,7 @@ fun FloatingActionButtons(navController: NavController) {
             //backgroundColor = greenColor,
             contentColor = Color.White
         ) {
-            Icon(Icons.Filled.Add, "")
+            Icon(painterResource(R.drawable.vc_add_alarm),modifier = Modifier.size(24.dp), contentDescription =  "", tint = Color.Black)
         }
     }
 }
@@ -850,18 +844,18 @@ fun PermissionDeniedContent(
 }
 
 @Composable
-fun AnimatedSplashScreen(navController: NavHostController,onSplashFinished: () -> Unit) {
+fun AnimatedSplashScreen(navController: NavHostController, onSplashFinished: () -> Unit) {
     var startAnimation by remember { mutableStateOf(false) }
     val alphaAnim = animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
         animationSpec = tween(
-            durationMillis = 3000
+            durationMillis = 1000
         )
     )
 
     LaunchedEffect(key1 = true) {
         startAnimation = true
-        delay(3000)
+        delay(1000)
         navController.popBackStack()
         navController.navigate("task_list")
     }
@@ -898,6 +892,23 @@ fun SplashScreenPreview() {
 fun SplashScreenDarkPreview() {
     Splash(alpha = 1f)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

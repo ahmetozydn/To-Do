@@ -17,6 +17,7 @@ import com.ozaydin.todoapplication.utils.Util.Companion.NOTIFICATION
 import com.ozaydin.todoapplication.utils.Util.Companion.NOTIFICATION_LIST
 import com.ozaydin.todoapplication.utils.createChannel
 import com.ozaydin.todoapplication.utils.createNotification
+import com.ozaydin.todoapplication.utils.getUniqueId
 
 
 /*
@@ -28,7 +29,6 @@ class AlarmReceiver : BroadcastReceiver() {
 
 
     override fun onReceive(context: Context, intent: Intent) {
-        println("incide alarm receiver")
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // API 33
             intent.getParcelableExtra(NOTIFICATION, Notification::class.java)
         } else {
@@ -43,12 +43,10 @@ class AlarmReceiver : BroadcastReceiver() {
             notificationList.forEach{
                 if(it.date != null && it.time != null){
                     val notification =  createNotification(it,context)
-                    createChannel(Util.CHANNEL_ID,context,it)
+                    createChannel(getUniqueId().toString(),context,it)
                 }
             }
         }
-        println("Inside Alarm Receiver")
-        println("$notification **********************************************")
         val notificationManager = NotificationManagerCompat.from(context)
         if (ActivityCompat.checkSelfPermission(
                 context,
@@ -68,7 +66,7 @@ class AlarmReceiver : BroadcastReceiver() {
 
         // Show the notification
         if (notification != null) {
-            notificationManager.notify(0, notification) // change the 0 value and test
+            notificationManager.notify(getUniqueId().toInt(), notification) // notification id
         }
     }
 }

@@ -20,6 +20,10 @@ data class Task(
     val time: String? = null,     // LocalDateTime or LocalDate or Date which one should be used?
     @ColumnInfo(name = "is_done") // request_code for alarm must unique
     val isDone: Boolean? = null,
+    @ColumnInfo(name = "priority")
+    val priority : String? = "",
+    @ColumnInfo(name = "alarm_id")
+    val alarmId : Long = 0,
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0
 ) :Parcelable
