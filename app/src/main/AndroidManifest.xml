@@ -32,12 +32,12 @@
             </intent-filter>
         </receiver>
         <activity
-            android:name="com.ozaydin.todoapplication.view.AddTask"
+            android:name="com.ozaydin.todoapplication.presentation.AddTask"
             android:exported="false"
             android:label="@string/title_activity_date_time_picker"
             android:theme="@style/Theme.ToDoApplication" />
         <activity
-            android:name="com.ozaydin.todoapplication.view.TaskList"
+            android:name="com.ozaydin.todoapplication.presentation.TaskList"
             android:exported="true"
             android:theme="@style/Theme.White">
             <intent-filter>

@@ -1,4 +1,4 @@
-package com.ozaydin.todoapplication.view
+package com.ozaydin.todoapplication.presentation
 
 import android.Manifest
 import android.app.*
@@ -21,7 +21,6 @@ import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.*
@@ -45,18 +44,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.toLowerCase
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,17 +62,15 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgs
 import com.google.accompanist.permissions.*
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
-import com.ozaydin.todoapplication.notification.AlarmReceiver
 import com.ozaydin.todoapplication.R
 import com.ozaydin.todoapplication.data.Task
 import com.ozaydin.todoapplication.theme.*
-import com.ozaydin.todoapplication.utils.Util.Companion.NOTIFICATION
 import com.ozaydin.todoapplication.utils.cancelAlarm
 import com.ozaydin.todoapplication.viewmodel.ViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
@@ -105,7 +99,6 @@ class TaskList : ComponentActivity() {
                         //AnimatedSplashScreen(navController)
                     }
                     composable("task_list") {
-                        //Demo()
                         TaskListScreen(navController = navController, taskListViewModel)
                     }
                     composable("add_task") { backStackEntry ->
@@ -402,7 +395,7 @@ fun GenerateList(
             LazyColumn(
                 //state = lazyListState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(4.dp),
+                contentPadding = PaddingValues(0.dp),
             ) {
                 itemsIndexed(items = itemsList,
                     key = { index: Int, item: Task -> item.hashCode() },
@@ -506,9 +499,6 @@ fun GenerateList(
         }
 
     }
-
-
-
     FloatingActionButtons(navController = navController)
     //val listItems = viewModel._taskList // remember gives MutableStateList
     /*SideEffect {
@@ -556,86 +546,172 @@ fun GenerateCard(task: Task, onRemove: (Task) -> Unit) {
             min = timeList[1].toString()
             calendar.set(year.toInt(), month.toInt() - 1, day.toInt(), hours.toInt(), min.toInt())
         }
-
     }
 
     Card(
-        modifier = Modifier.fillMaxSize().height(80.dp).padding(3.dp) //3.dp
-            .shadow(4.dp, shape = RoundedCornerShape(3.dp)), // 8dp
+        modifier = Modifier.wrapContentHeight().fillMaxWidth().padding(3.dp, 3.dp) //3.dp
+            .shadow(6.dp, shape = RoundedCornerShape(3.dp)), // 8dp
         colors = CardDefaults.cardColors(
             containerColor = Color.White,
-            contentColor = Color.White
+            contentColor = Color.Black
         ),
-        border = BorderStroke(
-            width = 0.dp,
-            color = CustomGray
-        ),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().height(intrinsicSize = IntrinsicSize.Max)) {
+            Box(
+                Modifier.width(8.dp).fillMaxHeight().background(
+                    if (!task.date.isNullOrBlank()) {
+                        if (calendar.timeInMillis > System.currentTimeMillis()) DarkGreen else Color.Red
+                    } else {
+                        Color.Gray
+                    }
+                )
+            ) {
 
-        ) {
-        Row(modifier = Modifier.fillMaxSize().padding(0.dp)) {
-
-            Box(modifier = Modifier.height(80.dp).width(8.dp).padding(0.dp)) {
-                Button(
-                    modifier = Modifier.width(8.dp).height(80.dp).padding(0.dp),
-                    onClick = { },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (!task.date.isNullOrBlank()) {
-                            if (calendar.timeInMillis > System.currentTimeMillis()) DarkGreen else Color.Red
-                        } else {
-                            Color.Transparent
-                        },
-                        contentColor = if (calendar.timeInMillis > System.currentTimeMillis()) DarkGreen else Color.Red,
-                    ),
-                    shape = RoundedCornerShape(8.dp, 0.dp, 0.dp, 8.dp),
-                ) {
-
-                }
             }
 
+            Column(modifier = Modifier.fillMaxWidth().wrapContentHeight()) {
+                /* Button(
+                     contentPadding = PaddingValues(0.dp),
 
-            Column {
-                Text(
-                    modifier = Modifier.padding(12.dp, 4.dp, 2.dp, 2.dp),
-                    text = task.title!!,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Black,
-                    maxLines = 1
-                )
-                Text(
-                    modifier = Modifier.padding(12.dp, 4.dp, 2.dp, 2.dp),
-                    text = task.description!!,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.DarkGray,
-                    maxLines = 1,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(1f).padding(0.dp, 0.dp, 8.dp, 2.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+                     modifier = Modifier.wrapContentSize().padding(10.dp)
+                         .defaultMinSize(
+                             minWidth = ButtonDefaults.MinWidth,
+                             minHeight = 1.dp)
+                         .align(Alignment.End),
+                     onClick = { },
+                     colors = ButtonDefaults.buttonColors(
+                         containerColor = if (task.priority == "HIGH") PriorityHigh else if (task.priority == "LOW") PriorityLow else if (task.priority == "MEDIUM") PriorityMedium else Color.White,
+                         contentColor = Color.Black,
+                     ),
+                     //shape = RoundedCornerShape(5.dp, 0.dp, 0.dp, 5.dp),
+                 ) {
+                     task.priority?.let {
+                         if (task.priority != "NONE") {
+                             Text(
+                                 it.toLowerCase(),
+                                 style = TextStyle(fontSize = 14.sp),
+                                 modifier = Modifier.padding(0.dp),
+                                 fontWeight = FontWeight.Bold,
+                                 color = Color.Black,
+                             )
+                         }
+                     }
+                     //Text("lkdsjafşlsajkdf",color = Color.Black)
+                 }*/
+           /*     Box(
+                    modifier = Modifier.height(24.dp).fillMaxWidth(),
+                    contentAlignment = Alignment.TopEnd
                 ) {
-                    if(task.date != ""){
-                        Icon(
-                            modifier = Modifier.size(24.dp),
-                            painter = painterResource(id = R.drawable.vc_alarm),
-                            contentDescription = "alarm icon",
-                            tint = Color.Black
-                        )
+                    Button(
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.wrapContentWidth().wrapContentHeight()
+                            .defaultMinSize(
+                                minWidth = ButtonDefaults.MinWidth,
+                                minHeight = 0.dp
+                            ),
+                        onClick = { },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (task.priority == "HIGH") PriorityHigh else if (task.priority == "LOW") PriorityLow else if (task.priority == "MEDIUM") PriorityMedium else Color.White,
+                            contentColor = Color.Black,
+                        ),
+                        shape = RoundedCornerShape(0.dp, 0.dp, 0.dp, 0.dp),
+                    ) {
+                        task.priority?.let {
+                            if (task.priority != "NONE") {
+                                Text(
+                                    it.toLowerCase(),
+                                    style = TextStyle(fontSize = 14.sp),
+                                    modifier = Modifier.padding(0.dp),
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black,
+                                    textAlign = TextAlign.End
+                                )
+                            }
+                        }
                     }
-                    task.time?.let {
-                        Text(
-                            modifier = Modifier.padding(6.dp, 0.dp, 2.dp, 0.dp).align(Alignment.CenterVertically),
-                            textAlign = TextAlign.End,
-                            text = if (day != "") "$it | $abbreviatedMonth $day, $year" else "",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color =
-                            if (calendar.timeInMillis >= System.currentTimeMillis()) DarkGreen else Color.Red,
-                            maxLines = 1,
-                        )
+                }*/
+                Column {
+                    Text(
+                        modifier = Modifier.padding(8.dp, 4.dp, 4.dp, 0.dp),
+                        text = task.title!!,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.Black,
+                        maxLines = 1
+                    )
+                    Text(
+                        modifier = Modifier.padding(8.dp, 4.dp, 4.dp, 0.dp),
+                        text = task.description!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.DarkGray,
+                        maxLines = 1,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(1f).padding(8.dp, 4.dp, 8.dp, 4.dp),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (task.date != "") {
+                            Icon(
+                                modifier = Modifier.size(24.dp).padding(0.dp),
+                                painter = painterResource(id = R.drawable.vc_alarm),
+                                contentDescription = "alarm icon",
+                                tint = Color.Black
+                            )
+                        }
+                        task.time?.let {
+                            Text(
+                                modifier = Modifier.padding(6.dp, 0.dp, 2.dp, 0.dp)
+                                    .align(Alignment.CenterVertically),
+                                textAlign = TextAlign.End,
+                                text = if (day != "") "$it | $abbreviatedMonth $day, $year" else "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color =
+                                if (calendar.timeInMillis >= System.currentTimeMillis()) DarkGreen else Color.Red,
+                                maxLines = 1,
+                            )
+                        }
+                        Box(
+                            modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(0.dp), contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Button(
+                                contentPadding = PaddingValues(0.dp),
+                                modifier = Modifier.wrapContentWidth().height(20.dp)
+                                    .defaultMinSize(
+                                        minWidth = ButtonDefaults.MinWidth,
+                                        minHeight = 1.dp
+                                    ),
+                                onClick = { },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (task.priority == "HIGH") PriorityHigh else if (task.priority == "LOW") PriorityLow else if (task.priority == "MEDIUM") PriorityMedium else Color.White,
+                                    contentColor = Color.Black,
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                            ){
+                                task.priority?.let {
+                                    if (task.priority != "NONE") {
+                                        Text(
+                                            it.toLowerCase(),
+                                            style = TextStyle(fontSize = 14.sp),
+                                            modifier = Modifier.padding(0.dp),
+                                            fontWeight = FontWeight.Bold,
+                                            color = when(task.priority){
+                                                "HIGH" -> PriorityHighTextColor
+                                                "MEDIUM" -> PriorityMediumTextColor
+                                                "LOW" -> PriorityLowTextColor
+                                                else -> {Color.White }
+                                            },
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                            }
+
+                        }
                     }
                 }
+
             }
         }
-
     }
 }
 
@@ -659,7 +735,8 @@ fun SearchBar(
         mutableStateOf(hint != "")
     }
     BasicTextField(
-        modifier = modifier.padding(2.dp).fillMaxWidth(),
+        modifier = modifier.padding(2.dp).fillMaxWidth()
+            .shadow(1.dp, shape = RoundedCornerShape(16.dp)),
         value = text,
         maxLines = 1,
         onValueChange = {
@@ -725,7 +802,12 @@ fun FloatingActionButtons(navController: NavController) {
             //backgroundColor = greenColor,
             contentColor = Color.White
         ) {
-            Icon(painterResource(R.drawable.vc_add_alarm),modifier = Modifier.size(24.dp), contentDescription =  "", tint = Color.Black)
+            Icon(
+                painterResource(R.drawable.vc_add_alarm),
+                modifier = Modifier.size(24.dp),
+                contentDescription = "",
+                tint = Color.Black
+            )
         }
     }
 }

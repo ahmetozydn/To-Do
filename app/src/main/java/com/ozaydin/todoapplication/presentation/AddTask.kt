@@ -1,4 +1,4 @@
-package com.ozaydin.todoapplication.view
+package com.ozaydin.todoapplication.presentation
 
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -44,12 +44,15 @@ import com.ozaydin.todoapplication.utils.createChannel
 import com.ozaydin.todoapplication.viewmodel.ViewModel
 import java.util.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.toSize
-import com.ozaydin.todoapplication.theme.CustomGray
-import com.ozaydin.todoapplication.theme.CustomGreen
+import com.ozaydin.todoapplication.theme.PriorityHighTextColor
+import com.ozaydin.todoapplication.theme.PriorityLowTextColor
+import com.ozaydin.todoapplication.theme.PriorityMediumTextColor
 import com.ozaydin.todoapplication.utils.getUniqueId
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -60,7 +63,7 @@ fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
     val showDialog = remember { mutableStateOf(false) }
     var isTextFieldEmpty by remember { mutableStateOf(false) }
     var isDueDateAdded by remember { mutableStateOf(false) }
-
+    val priority = remember { mutableStateOf("NONE") }
     val context = LocalContext.current
     val selectedDate = remember { mutableStateOf("") }
     val selectedTime = remember { mutableStateOf("") }
@@ -142,7 +145,7 @@ fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
                 SpecialOutlinedTextField(descriptionTextField.value) {
                     descriptionTextField.value = it
                 }
-                DropDownMenu()
+                DropDownMenu(priority)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -232,7 +235,7 @@ fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
                                         selectedDate.value,
                                         selectedTime.value,
                                         false,
-                                        "",
+                                        priority.value,
                                         getUniqueId()
                                     )
                                     viewModel.saveTask(aTask)
@@ -269,7 +272,8 @@ fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
                                     capitalize.trim(),
                                     "",
                                     "",
-                                    false
+                                    false,
+                                    priority.value
                                 )
                                 //save without due date
                                 viewModel.saveTask(aTask)
@@ -329,11 +333,10 @@ fun SpecialOutlinedTextField(string: String, function: (String) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DropDownMenu() {
-
+fun DropDownMenu(priority: MutableState<String>) {
+    val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
-    val suggestions = listOf("HIGH", "LOW", "MEDIUM", "DEFAULT")
-    var selectedText by remember { mutableStateOf("DEFAULT") }
+    val suggestions = listOf("HIGH", "LOW", "MEDIUM", "NONE") // TODO consider to give a better solution
 
     var textfieldSize by remember { mutableStateOf(Size.Zero)}
 
@@ -341,41 +344,61 @@ fun DropDownMenu() {
         Icons.Filled.KeyboardArrowUp
     else
         Icons.Filled.KeyboardArrowDown
+    val priorityColor = when(priority.value){
+        "HIGH" -> PriorityHighTextColor
+        "MEDIUM" -> PriorityMediumTextColor
+        "LOW" -> PriorityLowTextColor
+        else -> Color.Black
+    }
 
-
-    Column(Modifier.padding(20.dp)) {
-        OutlinedTextField(
-            value = selectedText,
-            onValueChange = { selectedText = it },
-            modifier = Modifier
-                .wrapContentSize()
-                .onGloballyPositioned { coordinates ->
-                    //This value is us ed to assign to the DropDown the same width
-                    textfieldSize = coordinates.size.toSize()
+    Column(Modifier.fillMaxWidth().padding(20.dp, 0.dp)) {
+            OutlinedTextField(
+                value = priority.value,
+                onValueChange = { priority.value = it },
+                modifier = Modifier
+                    .clickable { Toast.makeText(context,"lkdsajf",Toast.LENGTH_LONG).show() }
+                    .onGloballyPositioned { coordinates ->
+                        //This value is used to assign to the DropDown the same width
+                        textfieldSize = coordinates.size.toSize()
+                    },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.vc_circle),
+                        contentDescription = "Back button",
+                        tint = priorityColor
+                    )
                 },
-            readOnly = true,
-            label = {Text("Priority")},
-            trailingIcon = {
-                Icon(icon,"contentDescription",
-                    Modifier.clickable { expanded = !expanded })
-            }
-        )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .width(with(LocalDensity.current){textfieldSize.width.toDp()})
-        ) {
-            suggestions.forEach { label ->
-                DropdownMenuItem(onClick = {
-                    selectedText = label
-                    expanded = false
-                }) {
-                    Text(text = label)
+                textStyle = TextStyle(color = priorityColor),
+                readOnly = true,
+                label = {Text("Priority")},
+                singleLine = true,
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    unfocusedBorderColor = Color.Gray,
+                    focusedBorderColor = Color.Gray,
+                    disabledBorderColor = Color.Gray
+                ),
+                trailingIcon = {
+                    Icon(icon,"contentDescription",
+                        Modifier.clickable { expanded = !expanded })
+                },
+                )
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier
+                    .width(with(LocalDensity.current){textfieldSize.width.toDp()}).background(Color.White)
+            ) {
+                suggestions.forEach { label ->
+                    DropdownMenuItem(onClick = {
+                        priority.value = label
+                        expanded = false
+                    }) {
+                        Text(text = label)
+                    }
                 }
             }
         }
-    }}
+    }
 @Composable
 fun AddDateTimeCheckBox(
     checked: Boolean,

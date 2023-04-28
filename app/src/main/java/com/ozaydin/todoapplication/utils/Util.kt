@@ -16,7 +16,7 @@ import androidx.core.graphics.drawable.toBitmap
 import com.ozaydin.todoapplication.R
 import com.ozaydin.todoapplication.data.Task
 import com.ozaydin.todoapplication.notification.AlarmReceiver
-import com.ozaydin.todoapplication.view.TaskList
+import com.ozaydin.todoapplication.presentation.TaskList
 import java.util.*
 
 class Util {
