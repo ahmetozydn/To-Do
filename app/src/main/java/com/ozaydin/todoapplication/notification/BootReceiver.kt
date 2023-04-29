@@ -66,7 +66,7 @@ class BootReceiver @Inject constructor(private val taskRepository: TaskRepositor
             alarmList.forEach {
                 //val notification =  createNotification(it,context)
                 if (it.date != null && it.time != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {  // API 26
-                    val channelId = getUniqueId()
+                    val channelId = Util.CHANNEL_ID
                     val channelName = Util.CHANNEL_NAME
                     val importance = NotificationManager.IMPORTANCE_DEFAULT
                     val channel =

@@ -19,21 +19,25 @@ interface TaskDao {
     @Query("SELECT * FROM task")
     suspend fun getAllTasks(): List<Task>?
 
-    @Query(
-        """
-  SELECT *
-  FROM task
-  WHERE title MATCH :query
-"""
-    )
-    suspend fun search(query: String): List<Task>
-
     @Query("SELECT * FROM task WHERE title LIKE :searchQuery OR description LIKE :searchQuery")
     suspend fun searchDatabase(searchQuery: String): List<Task>?
 
     @Delete
     suspend fun delete(task: Task)
 
+   /* @Query("UPDATE task SET " +
+            "title = :task.title , " +
+            "description = :task.description , " +
+            "date = :task.date , " +
+            "time = :task.time , " +
+            "isDone = :task.isDone , " +
+            "priority = :task.priority , " +
+            "alarmId = :task.alarmId , "+
+            "WHERE id = :task.id; ")
+    suspend fun update(task: Task)
+*/
+    @Update
+   suspend fun update(task: Task)
 
 }
 

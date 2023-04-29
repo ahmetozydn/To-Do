@@ -30,7 +30,7 @@ class TaskRepository @Inject constructor(private val db: TaskDatabase){
         db.taskDao().delete(task = task)
     }
 
-    fun updateTask(item: Task) {}
+    fun updateTask(task:Task) = coroutineScope.launch(Dispatchers.IO) { db.taskDao().update(task) }
 
      suspend fun getAllTasks() : List<Task>?{
         return db.taskDao().getAllTasks()

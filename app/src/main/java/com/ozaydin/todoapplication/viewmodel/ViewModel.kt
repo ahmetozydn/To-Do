@@ -20,14 +20,18 @@ class ViewModel @Inject constructor(private val taskRepository: TaskRepository) 
     //var taskList: MutableState<List<Task>> = _taskList
     //private var listToSearch: List<Task> = ArrayList()
     //private var anotherlist: MutableState<List<Task>> = mutableStateOf<List<Task>>(emptyList())
-    private lateinit var listToSearch : List<Task>
+    private lateinit var listToSearch: List<Task>
     private var anotherlist = mutableStateOf<List<Task>>(listOf())
-    var _taskList = mutableStateOf<List<Task>>(listOf()) //shapshotstatelist() // can be nullable and used to show empty message with this
+    var _taskList =
+        mutableStateOf<List<Task>>(listOf()) //shapshotstatelist() // can be nullable and used to show empty message with this
+
     //val taskList : List<Task> = _taskList
     val filteredItems: State<List<Task>> = _taskList
-     var isListEmpty = mutableStateOf<Boolean?>(value = null)//_taskList.value.isEmpty()
+    var isListEmpty = mutableStateOf<Boolean?>(value = null)//_taskList.value.isEmpty()
     var cryptoList = mutableStateOf<List<Task>>(listOf())
     var isSeachListEmpty = mutableStateOf<Boolean?>(null)
+
+    var clickedTask = mutableStateOf<Task?>(null)
     /* var _taskList = mutableStateOf<List<Task>>(listOf())
      private var anotherlist =  mutableStateOf<List<Task>>(listOf())
      private var listToSearch =  mutableStateListOf<Task>()
@@ -77,7 +81,7 @@ class ViewModel @Inject constructor(private val taskRepository: TaskRepository) 
             }
             isSeachListEmpty.value = filteredList?.isEmpty()
             if (filteredList != null) {
-                    _taskList.value = filteredList
+                _taskList.value = filteredList
             }
             // _taskList.toMutableStateList()
 
@@ -129,13 +133,18 @@ class ViewModel @Inject constructor(private val taskRepository: TaskRepository) 
     }
 
     fun saveTask(task: Task) {
-            viewModelScope.launch(Dispatchers.Default) {
-                taskRepository.addTask(task)
-                anotherlist.value =
-                    taskRepository.getAllTasks()!!// is coroutineScope should be used?
-                _taskList.value = _taskList.value.plus(task)
-               isListEmpty.value = false
-            }
+        viewModelScope.launch(Dispatchers.Default) {
+            taskRepository.addTask(task)
+            anotherlist.value =
+                taskRepository.getAllTasks()!!// is coroutineScope should be used?
+            _taskList.value = _taskList.value.plus(task)
+            isListEmpty.value = false
+        }
+    }
+    fun updateTask(task:Task) = viewModelScope.launch(Dispatchers.IO) { taskRepository.updateTask(task) }
+
+    fun setClickedItem(task: Task?) {
+        clickedTask.value = task
     }
 }
 

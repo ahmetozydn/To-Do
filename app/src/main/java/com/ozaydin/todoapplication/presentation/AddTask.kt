@@ -44,7 +44,6 @@ import com.ozaydin.todoapplication.utils.createChannel
 import com.ozaydin.todoapplication.viewmodel.ViewModel
 import java.util.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -53,6 +52,7 @@ import androidx.compose.ui.unit.toSize
 import com.ozaydin.todoapplication.theme.PriorityHighTextColor
 import com.ozaydin.todoapplication.theme.PriorityLowTextColor
 import com.ozaydin.todoapplication.theme.PriorityMediumTextColor
+import com.ozaydin.todoapplication.utils.Util.Companion.CHANNEL_ID
 import com.ozaydin.todoapplication.utils.getUniqueId
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -60,20 +60,24 @@ import com.ozaydin.todoapplication.utils.getUniqueId
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
+    LaunchedEffect(Unit){
+
+    }
+    val clickedTask = remember {viewModel.clickedTask}
+    val context = LocalContext.current
+
     val showDialog = remember { mutableStateOf(false) }
     var isTextFieldEmpty by remember { mutableStateOf(false) }
-    var isDueDateAdded by remember { mutableStateOf(false) }
-    val priority = remember { mutableStateOf("NONE") }
-    val context = LocalContext.current
-    val selectedDate = remember { mutableStateOf("") }
-    val selectedTime = remember { mutableStateOf("") }
+    val rememberMe : MutableState<Boolean> = if(clickedTask.value == null || clickedTask.value?.date == "") remember { mutableStateOf(false) } else remember {  mutableStateOf(true)}
+    val priority :MutableState<String?> =  if(clickedTask.value == null) remember { mutableStateOf("NONE") } else remember {  mutableStateOf(clickedTask.value?.priority)}
+    val selectedDate :MutableState<String?> =  if(clickedTask.value == null)remember { mutableStateOf("")} else remember { mutableStateOf(clickedTask.value?.date)}
+    val selectedTime :MutableState<String?> = if(clickedTask.value == null) remember { mutableStateOf("") } else remember {  mutableStateOf(clickedTask.value?.time)}
+
     //val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy.", Locale.ENGLISH)
-    val descriptionTextField = remember {
-        mutableStateOf("")
-    }
-    val titleTextField = remember {
-        mutableStateOf("") //mutableStateOf(TextFieldValue())
-    }
+    val descriptionTextField :MutableState<String?> =
+        if(clickedTask.value == null) remember { mutableStateOf("")} else remember {  mutableStateOf(clickedTask.value?.description) }
+    val titleTextField :MutableState<String?> =
+        if(clickedTask.value == null) remember { mutableStateOf("")} else remember {mutableStateOf(clickedTask.value?.title)}//mutableStateOf(TextFieldValue())
     val calendarState = rememberSheetState()
     CalendarDialog(state = calendarState,
         config = CalendarConfig(
@@ -93,12 +97,13 @@ fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
             println(selectedTime)
         }
     )
+    val title = if(clickedTask.value == null) "Add Task" else "Update Task"
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 modifier = Modifier.fillMaxWidth(),
                 title = {
-                    Text(text = "Add Task")
+                    Text(text = title)
                 },
                 navigationIcon = {
                     IconButton(onClick = {
@@ -122,28 +127,32 @@ fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth().padding(20.dp, 0.dp),
-                    value = titleTextField.value,
-                    label = { Text(text = "Title") },
-                    onValueChange = {
-                        titleTextField.value = it
-                        if (isTextFieldEmpty) {
-                            isTextFieldEmpty = false
-                        }
-                    },
-                    isError = isTextFieldEmpty,
-                    placeholder = { Text("Enter the title") },
-                    singleLine = true,
-                    colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.White)
+                titleTextField.value?.let { it1 ->
+                    OutlinedTextField(
+                        modifier = Modifier.fillMaxWidth().padding(20.dp, 0.dp),
+                        value = it1,
+                        label = { Text(text = "Title") },
+                        onValueChange = {
+                            titleTextField.value = it
+                            if (isTextFieldEmpty) {
+                                isTextFieldEmpty = false
+                            }
+                        },
+                        isError = isTextFieldEmpty,
+                        placeholder = { Text("Enter the title") },
+                        singleLine = true,
+                        colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.White)
 
 
-                    /*           label = "Description",
-                               placeholder = "Not compulsory"*/
-                )
+                        /*           label = "Description",
+                                               placeholder = "Not compulsory"*/
+                    )
+                }
                 Spacer(modifier = Modifier.height(12.dp))
-                SpecialOutlinedTextField(descriptionTextField.value) {
-                    descriptionTextField.value = it
+                descriptionTextField.value?.let { it1 ->
+                    SpecialOutlinedTextField(it1) {
+                        descriptionTextField.value = it
+                    }
                 }
                 DropDownMenu(priority)
 
@@ -157,12 +166,12 @@ fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
                     modifier = Modifier.align(Alignment.Start).padding(10.dp, 0.dp)
                 ) {
                     AddDateTimeCheckBox(
-                        checked = isDueDateAdded,
-                        onCheckedChange = { isDueDateAdded = it }
+                        checked = rememberMe.value,
+                        onCheckedChange = { rememberMe.value = it }
                     )
                 }
                 Column {
-                    AnimatedVisibility(isDueDateAdded) {
+                    AnimatedVisibility(rememberMe.value) {
                         Row(
                             modifier = Modifier.fillMaxWidth().align(Alignment.CenterHorizontally),
                             horizontalArrangement = Arrangement.SpaceEvenly
@@ -216,31 +225,47 @@ fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
-                            val capitalize = descriptionTextField.value.capitalized()
-                            val capitalizedTitle = titleTextField.value.capitalized()
+                            val capitalize = descriptionTextField.value?.capitalized()
+                            val capitalizedTitle = titleTextField.value?.capitalized()
                             //var date = LocalDate.parse(selectedDate) // "dd-MM-yyyy"
                             //val id = UUID.randomUUID().toString() unique id
 
-                            if (titleTextField.value.isEmpty()) {
+                            if (titleTextField.value?.isEmpty() == true) {
                                 isTextFieldEmpty = true
                                 return@Button
                             } else {
                                 isTextFieldEmpty = false
                             }
-                            if (isDueDateAdded) {
+                            if (rememberMe.value) {
                                 if (selectedDate.value != "" && selectedTime.value != "") {
+                                    if(clickedTask.value != null){
+                                        val aTask = Task(
+                                            capitalizedTitle?.trim(),
+                                            capitalize?.trim(),
+                                            selectedDate.value,
+                                            selectedTime.value,
+                                            false,
+                                            priority.value,
+                                            clickedTask.value!!.alarmId,
+                                            clickedTask.value!!.id
+                                        )
+                                        viewModel.updateTask(task = aTask)
+                                        navController.navigate("task_list")
+                                        return@Button
+                                    }
                                     val aTask = Task(
-                                        capitalizedTitle.trim(),
-                                        capitalize.trim(),
+                                        capitalizedTitle?.trim(),
+                                        capitalize?.trim(),
                                         selectedDate.value,
                                         selectedTime.value,
                                         false,
                                         priority.value,
                                         getUniqueId()
                                     )
+
                                     viewModel.saveTask(aTask)
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {  // API 26
-                                        val channelId = getUniqueId()
+                                        val channelId = CHANNEL_ID
                                         val channelName = CHANNEL_NAME
                                         val importance = NotificationManager.IMPORTANCE_DEFAULT
                                         val channel =
@@ -267,15 +292,35 @@ fun AddTaskScreen(navController: NavController, viewModel: ViewModel) {
                                     //showDialog.value = true
                                 }
                             } else {
+                                //save without due date
+                                /*if(clickedTask.value?.alarmId){
+                                    // if there is an alarm is set before and updated at cancel , cancel it
+                                }*/
+
+                                if(clickedTask.value != null){
+                                    val task = Task(
+                                        capitalizedTitle?.trim(),
+                                        capitalize?.trim(),
+                                        "",
+                                        "",
+                                        false,
+                                        priority.value,
+                                        0,
+                                        clickedTask.value!!.id
+                                    )
+                                    viewModel.updateTask(task = task)
+                                    navController.navigate("task_list")
+                                    return@Button
+                                }
                                 val aTask = Task(
-                                    capitalizedTitle.trim(),
-                                    capitalize.trim(),
+                                    capitalizedTitle?.trim(),
+                                    capitalize?.trim(),
                                     "",
                                     "",
                                     false,
-                                    priority.value
+                                    priority.value,
+                                    0,
                                 )
-                                //save without due date
                                 viewModel.saveTask(aTask)
                                 navController.navigate("task_list")
                             }
@@ -333,7 +378,7 @@ fun SpecialOutlinedTextField(string: String, function: (String) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DropDownMenu(priority: MutableState<String>) {
+fun DropDownMenu(priority: MutableState<String?>) {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
     val suggestions = listOf("HIGH", "LOW", "MEDIUM", "NONE") // TODO consider to give a better solution
@@ -352,36 +397,38 @@ fun DropDownMenu(priority: MutableState<String>) {
     }
 
     Column(Modifier.fillMaxWidth().padding(20.dp, 0.dp)) {
-            OutlinedTextField(
-                value = priority.value,
-                onValueChange = { priority.value = it },
-                modifier = Modifier
-                    .clickable { Toast.makeText(context,"lkdsajf",Toast.LENGTH_LONG).show() }
-                    .onGloballyPositioned { coordinates ->
-                        //This value is used to assign to the DropDown the same width
-                        textfieldSize = coordinates.size.toSize()
+            priority.value?.let {
+                OutlinedTextField(
+                    value = it,
+                    onValueChange = { priority.value = it },
+                    modifier = Modifier
+                        .clickable { Toast.makeText(context,"lkdsajf",Toast.LENGTH_LONG).show() }
+                        .onGloballyPositioned { coordinates ->
+                            //This value is used to assign to the DropDown the same width
+                            textfieldSize = coordinates.size.toSize()
+                        },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.vc_circle),
+                            contentDescription = "Back button",
+                            tint = priorityColor
+                        )
                     },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.vc_circle),
-                        contentDescription = "Back button",
-                        tint = priorityColor
-                    )
-                },
-                textStyle = TextStyle(color = priorityColor),
-                readOnly = true,
-                label = {Text("Priority")},
-                singleLine = true,
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    unfocusedBorderColor = Color.Gray,
-                    focusedBorderColor = Color.Gray,
-                    disabledBorderColor = Color.Gray
-                ),
-                trailingIcon = {
-                    Icon(icon,"contentDescription",
-                        Modifier.clickable { expanded = !expanded })
-                },
+                    textStyle = TextStyle(color = priorityColor),
+                    readOnly = true,
+                    label = {Text("Priority")},
+                    singleLine = true,
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        unfocusedBorderColor = Color.Gray,
+                        focusedBorderColor = Color.Gray,
+                        disabledBorderColor = Color.Gray
+                    ),
+                    trailingIcon = {
+                        Icon(icon,"contentDescription",
+                            Modifier.clickable { expanded = !expanded })
+                    },
                 )
+            }
             DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },

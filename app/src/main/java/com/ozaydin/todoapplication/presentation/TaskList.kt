@@ -5,8 +5,12 @@ import android.app.*
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.View
+import android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -57,12 +61,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
-import androidx.navigation.NavController
-import androidx.navigation.NavHostController
+import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgs
 import com.google.accompanist.permissions.*
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.ozaydin.todoapplication.R
@@ -84,9 +90,21 @@ class TaskList : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+/*        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.statusBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }*/
+        //hide status bar
 
+        window?.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
+
+        //window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         setContent {
             ToDoApplicationTheme {
+
+
                 val navController = rememberNavController()
                 NavHost(
                     navController = navController,
@@ -99,9 +117,16 @@ class TaskList : ComponentActivity() {
                         //AnimatedSplashScreen(navController)
                     }
                     composable("task_list") {
+                        // show status bar
+
                         TaskListScreen(navController = navController, taskListViewModel)
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                        window.decorView.systemUiVisibility = SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        window.decorView.setBackgroundColor(ContextCompat.getColor(this@TaskList, R.color.white));
                     }
-                    composable("add_task") { backStackEntry ->
+                    composable("add_task",
+                       // arguments = listOf(navArgument("task") { type = NavType.ParcelableType(Task::class.java) })
+                        ) { backStackEntry ->
                         //val itemId = backStackEntry.arguments?.getString("itemId")
                         AddTaskScreen(navController = navController, taskListViewModel)
                     }
@@ -198,6 +223,7 @@ fun Demo() {
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun TaskListScreen(navController: NavController, viewModel: ViewModel) {
+
     val systemUiController = rememberSystemUiController()
     // Set the status bar color
     systemUiController.setStatusBarColor(
@@ -486,7 +512,7 @@ fun GenerateList(
                             },
 
                             dismissContent = {
-                                GenerateCard(item) {}
+                                GenerateCard(item,navController,currentItem,viewModel) {}
                             }
                         )
 
@@ -499,7 +525,7 @@ fun GenerateList(
         }
 
     }
-    FloatingActionButtons(navController = navController)
+    FloatingActionButtons(navController = navController,viewModel)
     //val listItems = viewModel._taskList // remember gives MutableStateList
     /*SideEffect {
         println("Inside : Side Effect**********")
@@ -518,7 +544,7 @@ fun GenerateList(
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun GenerateCard(task: Task, onRemove: (Task) -> Unit) {
+fun GenerateCard(task: Task,navController: NavController, currentItem: Task,viewModel:ViewModel, onRemove: (Task) -> Unit) {
     var year = ""
     var month = ""
     var day = ""
@@ -549,7 +575,8 @@ fun GenerateCard(task: Task, onRemove: (Task) -> Unit) {
     }
 
     Card(
-        modifier = Modifier.wrapContentHeight().fillMaxWidth().padding(3.dp, 3.dp) //3.dp
+        modifier = Modifier.wrapContentHeight().fillMaxWidth().padding(3.dp, 3.dp).clickable { viewModel.setClickedItem(currentItem)
+            navController.navigate("add_task") } //3.dp
             .shadow(6.dp, shape = RoundedCornerShape(3.dp)), // 8dp
         colors = CardDefaults.cardColors(
             containerColor = Color.White,
@@ -783,7 +810,7 @@ fun SearchBar(
 
 
 @Composable
-fun FloatingActionButtons(navController: NavController) {
+fun FloatingActionButtons(navController: NavController,viewModel:ViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -796,6 +823,7 @@ fun FloatingActionButtons(navController: NavController) {
         FloatingActionButton(
             onClick = {
                 //mContext.startActivity(Intent(mContext, DateTimePicker::class.java))
+                viewModel.setClickedItem(null)
                 navController.navigate("add_task")
             },
             shape = CircleShape,
