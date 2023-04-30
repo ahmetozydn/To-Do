@@ -42,7 +42,7 @@ class AlarmReceiver : BroadcastReceiver() {
         if(notificationList?.isNotEmpty() == true){
             notificationList.forEach{
                 if(it.date != null && it.time != null){
-                    val notification =  createNotification(it,context)
+                    //val notification =  createNotification(it,context)
                     createChannel(getUniqueId().toString(),context,it)
                 }
             }

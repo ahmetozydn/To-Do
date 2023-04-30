@@ -8,8 +8,12 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.os.Build
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.StyleSpan
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -79,24 +83,28 @@ fun createChannel(channelId: String, context: Context, task: Task) {
             .getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         calendar.set(year, month - 1, day, hours, min,0)
         if (calendar.timeInMillis > System.currentTimeMillis()) { // set alarm if the time is in future
-            // Create the notification
-            val notification = NotificationCompat.Builder(context, channelId)
+
+
+            val sb: Spannable = SpannableString(task.title)
+            sb.setSpan(StyleSpan(Typeface.BOLD), 0, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+
+            val notificationBuilder = NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.drawable.vc_done)
                 .setChannelId(channelId)
-                .setLargeIcon(iconBitmap)
-                .setContentTitle(task.title)
-                .setContentText(task.description)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setWhen(calendar.timeInMillis)
                 .setContentIntent(contentIntent)
-                //.setAutoCancel(true)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC).build()
-
-            println("the value of calendar is :  ${calendar.time}")
-            // Create an intent to launch the notification
-            val intent = Intent(context, AlarmReceiver::class.java)
-            intent.putExtra(Util.NOTIFICATION, notification)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setStyle(NotificationCompat
+                    .InboxStyle()
+                    .addLine(task.description)
+                    //.addLine("another line")
+                    .setBigContentTitle(sb)
+                    .setSummaryText("Reminder"))
+                .build()
+            val intent = Intent(context, AlarmReceiver::class.java) // Create an intent to launch the notification
+            intent.putExtra(Util.NOTIFICATION, notificationBuilder)
 
             val pendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // API 31
                 PendingIntent.getBroadcast( // every pending intent must be unique to show different notifications.
@@ -126,6 +134,9 @@ fun createNotification(task: Task, context: Context): Notification {
         .setContentText(task.description)
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         .setAutoCancel(true)
+
+
+
     return notificationBuilder.build()
 }
 fun cancelAlarm(context: Context, id: Long) {

@@ -5,7 +5,6 @@ import android.app.*
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -25,6 +24,7 @@ import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.*
@@ -34,6 +34,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.*
 import androidx.compose.material.DismissDirection.*
 import androidx.compose.material.icons.Icons
@@ -45,26 +47,28 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusModifier
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.toLowerCase
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -98,9 +102,7 @@ class TaskList : ComponentActivity() {
         //hide status bar
 
         window?.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
-
-        //window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
+       // window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         setContent {
             ToDoApplicationTheme {
 
@@ -121,8 +123,8 @@ class TaskList : ComponentActivity() {
 
                         TaskListScreen(navController = navController, taskListViewModel)
                         window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                        window.decorView.systemUiVisibility = SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        window.decorView.setBackgroundColor(ContextCompat.getColor(this@TaskList, R.color.white));
+                        //window.decorView.systemUiVisibility = SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        //window.decorView.setBackgroundColor(ContextCompat.getColor(this@TaskList, R.color.white));
                     }
                     composable("add_task",
                        // arguments = listOf(navArgument("task") { type = NavType.ParcelableType(Task::class.java) })
@@ -227,7 +229,7 @@ fun TaskListScreen(navController: NavController, viewModel: ViewModel) {
     val systemUiController = rememberSystemUiController()
     // Set the status bar color
     systemUiController.setStatusBarColor(
-        color = Color.White,
+        color = Color.Transparent,
         darkIcons = true // Set true if your status bar icons should be dark, false if light
     )
     LaunchedEffect(key1 = true) {
@@ -398,7 +400,7 @@ fun GenerateList(
         viewModel.fetchTasks()
     }*/
     println("Generate List Triggered")
-
+    var isFocused by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.background(Color.White)) {
         Column {
@@ -491,7 +493,7 @@ fun GenerateList(
                                     )
                             }*/
                                 Row(
-                                    modifier = Modifier.fillParentMaxSize().padding(3.dp)
+                                    modifier = Modifier.fillParentMaxSize().padding(8.dp,4.dp)
                                         .background(
                                             color = color,
                                             shape = RoundedCornerShape(12.dp)
@@ -575,8 +577,11 @@ fun GenerateCard(task: Task,navController: NavController, currentItem: Task,view
     }
 
     Card(
-        modifier = Modifier.wrapContentHeight().fillMaxWidth().padding(3.dp, 3.dp).clickable { viewModel.setClickedItem(currentItem)
-            navController.navigate("add_task") } //3.dp
+        modifier = Modifier.wrapContentHeight()
+            .fillMaxWidth()
+            .padding(8.dp, 4.dp)
+            .clickable { viewModel.setClickedItem(currentItem)
+                navController.navigate("add_task") } //3.dp
             .shadow(6.dp, shape = RoundedCornerShape(3.dp)), // 8dp
         colors = CardDefaults.cardColors(
             containerColor = Color.White,
@@ -592,71 +597,9 @@ fun GenerateCard(task: Task,navController: NavController, currentItem: Task,view
                         Color.Gray
                     }
                 )
-            ) {
-
-            }
+            ) {}
 
             Column(modifier = Modifier.fillMaxWidth().wrapContentHeight()) {
-                /* Button(
-                     contentPadding = PaddingValues(0.dp),
-
-                     modifier = Modifier.wrapContentSize().padding(10.dp)
-                         .defaultMinSize(
-                             minWidth = ButtonDefaults.MinWidth,
-                             minHeight = 1.dp)
-                         .align(Alignment.End),
-                     onClick = { },
-                     colors = ButtonDefaults.buttonColors(
-                         containerColor = if (task.priority == "HIGH") PriorityHigh else if (task.priority == "LOW") PriorityLow else if (task.priority == "MEDIUM") PriorityMedium else Color.White,
-                         contentColor = Color.Black,
-                     ),
-                     //shape = RoundedCornerShape(5.dp, 0.dp, 0.dp, 5.dp),
-                 ) {
-                     task.priority?.let {
-                         if (task.priority != "NONE") {
-                             Text(
-                                 it.toLowerCase(),
-                                 style = TextStyle(fontSize = 14.sp),
-                                 modifier = Modifier.padding(0.dp),
-                                 fontWeight = FontWeight.Bold,
-                                 color = Color.Black,
-                             )
-                         }
-                     }
-                     //Text("lkdsjafşlsajkdf",color = Color.Black)
-                 }*/
-           /*     Box(
-                    modifier = Modifier.height(24.dp).fillMaxWidth(),
-                    contentAlignment = Alignment.TopEnd
-                ) {
-                    Button(
-                        contentPadding = PaddingValues(0.dp),
-                        modifier = Modifier.wrapContentWidth().wrapContentHeight()
-                            .defaultMinSize(
-                                minWidth = ButtonDefaults.MinWidth,
-                                minHeight = 0.dp
-                            ),
-                        onClick = { },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (task.priority == "HIGH") PriorityHigh else if (task.priority == "LOW") PriorityLow else if (task.priority == "MEDIUM") PriorityMedium else Color.White,
-                            contentColor = Color.Black,
-                        ),
-                        shape = RoundedCornerShape(0.dp, 0.dp, 0.dp, 0.dp),
-                    ) {
-                        task.priority?.let {
-                            if (task.priority != "NONE") {
-                                Text(
-                                    it.toLowerCase(),
-                                    style = TextStyle(fontSize = 14.sp),
-                                    modifier = Modifier.padding(0.dp),
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.Black,
-                                    textAlign = TextAlign.End
-                                )
-                            }
-                        }
-                    }
-                }*/
                 Column {
                     Text(
                         modifier = Modifier.padding(8.dp, 4.dp, 4.dp, 0.dp),
@@ -758,54 +701,69 @@ fun SearchBar(
     var text by remember {
         mutableStateOf("")
     }
+    val customTextSelectionColors = TextSelectionColors(
+        handleColor = Color.Transparent,
+        backgroundColor = Color.Transparent
+    )
+
     var isHintDisplayed by remember {
         mutableStateOf(hint != "")
     }
-    BasicTextField(
-        modifier = modifier.padding(2.dp).fillMaxWidth()
-            .shadow(1.dp, shape = RoundedCornerShape(16.dp)),
-        value = text,
-        maxLines = 1,
-        onValueChange = {
-            text = it
-            onSearch(it)
-        },
-        cursorBrush = SolidColor(Color.Black),
-        singleLine = true,
-        textStyle = TextStyle(
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color.DarkGray
-        ),
-        decorationBox = { innerTextField ->
-            Row(
-                modifier = Modifier
-                    .padding(4.dp) // margin left and right
-                    .fillMaxWidth()
-                    .background(
-                        color = Color(0xFFD2F3F2),
-                        shape = RoundedCornerShape(size = 16.dp)
-                    )
-                    .border(
-                        width = 2.dp,
-                        color = Color(0xFFAAE9E6),
-                        shape = RoundedCornerShape(size = 16.dp)
-                    )
-                    .padding(all = 16.dp), // inner padding
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val interactionSource = remember { MutableInteractionSource() }
+    var isFocused = remember { false }
+        BasicTextField(
+            modifier = modifier.padding(8.dp,4.dp,8.dp,4.dp).fillMaxWidth()
+                .shadow(1.dp, shape = RoundedCornerShape(16.dp)),
+            value = text,
+            maxLines = 1,
+            onValueChange = {
+                //if(it == "" && !isFocused) focusManager.clearFocus()
+                text = it
+                onSearch(it)
+            },
+            cursorBrush = if (isFocused) SolidColor(Color.Black) else SolidColor(Color.Transparent),
+            singleLine = true,
+            interactionSource = interactionSource,
+            textStyle = TextStyle(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.DarkGray
+            ),
+            decorationBox = { innerTextField ->
+                Row(
+                    modifier = Modifier
+                        .padding(0.dp) // margin left and right
+                        .fillMaxWidth()
+                        .background(
+                            color = Color(0xFFD2F3F2),
+                            shape = RoundedCornerShape(size = 16.dp)
+                        )
+                        .focusModifier()
+                        .focusRequester(focusRequester)
+                        .onFocusChanged { isFocused = it.isFocused }
+                        .border(
+                            width = 2.dp,
+                            color = Color(0xFFAAE9E6),
+                            shape = RoundedCornerShape(size = 16.dp)
+                        )
+                        .padding(all = 20.dp), // inner padding
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
 
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Favorite icon",
-                    tint = Color.DarkGray
-                )
-                Spacer(modifier = Modifier.width(width = 8.dp))
-                innerTextField()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Favorite icon",
+                        tint = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.width(width = 8.dp))
+                    innerTextField()
+                }
             }
-        }
-    )
+        )
+
 }
 
 
